@@ -10,7 +10,7 @@
  */
 
 import { Building }        from '@/entities/Building.js';
-import { BUILDING_TIERS, LAUNCH_ZONE_RATIO } from '@/constants.js';
+import { BUILDING_TIERS }  from '@/constants.js';
 
 // Minimum separation (px) between any two building centers
 const MIN_DIST = 80;
@@ -22,21 +22,26 @@ const MAX_CANDIDATES = 30;
  * Generate `count` Building instances placed within the defended zone
  * (below the launch zone) of the canvas.
  *
- * @param {object} opts
- * @param {number} opts.canvasWidth
- * @param {number} opts.canvasHeight
- * @param {number} opts.count          Total number of buildings to place
- * @param {number} opts.tierIIIPercent Percentage (0-60) that should be Tier III
+ * @param {object}          opts
+ * @param {number}          opts.canvasWidth
+ * @param {number}          opts.canvasHeight
+ * @param {number}          opts.count           Total number of buildings to place
+ * @param {number}          opts.tierIIIPercent  Percentage (0-60) that should be Tier III
+ * @param {Float32Array|null} [opts.frontline]   Frontline y-values; null → flat fallback
  * @returns {Building[]}
  */
-export function generateMap({ canvasWidth, canvasHeight, count, tierIIIPercent }) {
-  const launchZoneBottom = canvasHeight * LAUNCH_ZONE_RATIO;
-
-  // Defended zone bounds with padding so buildings don't hug edges
+export function generateMap({ canvasWidth, canvasHeight, count, tierIIIPercent, frontline = null }) {
   const padding = 40;
   const xMin = padding;
   const xMax = canvasWidth - padding;
-  const yMin = launchZoneBottom + padding;
+
+  // Use the maximum (lowest on-screen) frontline y across the full width as the
+  // global yMin. This guarantees all placed buildings are below the frontline
+  // at every x position, avoiding the need to post-filter sampled points.
+  const yMin = frontline
+    ? _maxFrontlineY(frontline, xMin, xMax) + padding
+    : canvasHeight * 0.40 + padding;  // flat fallback
+
   const yMax = canvasHeight - padding;
 
   const positions = poissonDisc(xMin, xMax, yMin, yMax, MIN_DIST, count);
@@ -155,6 +160,27 @@ function poissonDisc(xMin, xMax, yMin, yMax, minDist, maxPoints) {
   }
 
   return points;
+}
+
+// ── Frontline helpers ─────────────────────────────────────────────────────────
+
+/**
+ * Return the maximum (lowest on-screen) frontline y value within [xMin, xMax].
+ * Used to compute the safe global yMin for Poisson-disc building placement.
+ *
+ * @param {Float32Array} frontline
+ * @param {number} xMin
+ * @param {number} xMax
+ * @returns {number}
+ */
+function _maxFrontlineY(frontline, xMin, xMax) {
+  let max = 0;
+  const lo = Math.floor(xMin);
+  const hi = Math.min(Math.ceil(xMax), frontline.length - 1);
+  for (let x = lo; x <= hi; x++) {
+    if (frontline[x] > max) max = frontline[x];
+  }
+  return max;
 }
 
 // ── Tier assignment ───────────────────────────────────────────────────────────

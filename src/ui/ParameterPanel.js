@@ -97,6 +97,12 @@ export class ParameterPanel {
     this._addSlider('simulation.batteryBudget',     'BATTERY BUDGET','simulation', 'batteryBudget');
     this._addSlider('simulation.tierIIIPercent',    'TIER III %',    'simulation', 'tierIIIPercent');
 
+    // ── Map & Terrain ─────────────────────────────────────────────────────────
+    this.container.appendChild(_sectionHeader('[MAP & TERRAIN]'));
+
+    this._addSlider('simulation.frontlineRoughness',    'FRONT ROUGHNESS', 'simulation', 'frontlineRoughness');
+    this._addSlider('simulation.frontlineMeanAltitude', 'FRONT ALTITUDE',  'simulation', 'frontlineMeanAltitude');
+
     // ── Actions ───────────────────────────────────────────────────────────────
     this.container.appendChild(_sectionHeader('[ACTIONS]'));
     this._buildActionButtons();

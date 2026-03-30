@@ -13,9 +13,6 @@
 /** Width (px) of the right-side parameter panel — excluded from canvas space. */
 export const UI_PANEL_WIDTH = 320;
 
-/** Top fraction of the canvas reserved as the hostile launch zone. */
-export const LAUNCH_ZONE_RATIO = 0.2;
-
 // ── Color palette ────────────────────────────────────────────────────────────
 
 export const COLORS = {
@@ -31,6 +28,9 @@ export const COLORS = {
   GRID:         'rgba(0, 136, 42, 0.18)',
   GRID_LABEL:   'rgba(0, 136, 42, 0.45)',
   TOPO:         'rgba(0, 80, 25, 0.12)',
+  FRONTLINE_ENEMY:    'rgba(180, 90,  0, 0.18)',
+  FRONTLINE_FRIENDLY: 'rgba(0, 100, 50, 0.16)',
+  FRONTLINE_LINE:     'rgba(255, 176, 0, 0.55)',
 };
 
 // ── Building tiers ───────────────────────────────────────────────────────────
@@ -103,11 +103,13 @@ export const DEFAULTS = {
 
   // Simulation-wide settings
   simulation: {
-    gravity:           80,   // px/s² downward acceleration
-    timeScale:         1.0,  // simulation speed multiplier
-    installationCount: 10,   // buildings per engagement
-    batteryBudget:     3,    // batteries the player may place
-    tierIIIPercent:    20,   // % of buildings that are Tier III (rest split I/II)
+    gravity:               80,   // px/s² downward acceleration
+    timeScale:             1.0,  // simulation speed multiplier
+    installationCount:     10,   // buildings per engagement
+    batteryBudget:         3,    // batteries the player may place
+    tierIIIPercent:        20,   // % of buildings that are Tier III (rest split I/II)
+    frontlineRoughness:    0.5,  // 0.0 = nearly flat, 1.0 = highly irregular
+    frontlineMeanAltitude: 0.40, // fraction from top (0.30–0.60)
   },
 };
 
@@ -130,11 +132,13 @@ export const PARAM_RANGES = {
   'hostile.jinkAmplitude':    { min: 0,    max: 80,   step: 1,    unit: 'px' },
   'hostile.jinkFrequency':    { min: 0,    max: 5,    step: 0.1,  unit: 'Hz' },
 
-  'simulation.gravity':           { min: 0,   max: 200,  step: 5,   unit: 'px/s²' },
-  'simulation.timeScale':         { min: 0.25, max: 3,   step: 0.25, unit: '×' },
-  'simulation.installationCount': { min: 5,   max: 20,   step: 1,   unit: '' },
-  'simulation.batteryBudget':     { min: 1,   max: 8,    step: 1,   unit: '' },
-  'simulation.tierIIIPercent':    { min: 0,   max: 60,   step: 5,   unit: '%' },
+  'simulation.gravity':               { min: 0,    max: 200,  step: 5,    unit: 'px/s²' },
+  'simulation.timeScale':             { min: 0.25, max: 3,    step: 0.25, unit: '×' },
+  'simulation.installationCount':     { min: 5,    max: 20,   step: 1,    unit: '' },
+  'simulation.batteryBudget':         { min: 1,    max: 8,    step: 1,    unit: '' },
+  'simulation.tierIIIPercent':        { min: 0,    max: 60,   step: 5,    unit: '%' },
+  'simulation.frontlineRoughness':    { min: 0.0,  max: 1.0,  step: 0.05, unit: '' },
+  'simulation.frontlineMeanAltitude': { min: 0.30, max: 0.60, step: 0.01, unit: '' },
 };
 
 // ── Game phase identifiers ────────────────────────────────────────────────────

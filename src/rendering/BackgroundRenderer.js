@@ -1,17 +1,23 @@
 /**
  * BackgroundRenderer.js  (Layer 0)
  *
- * Draws the static tactical backdrop:
- *   - Dark terrain fill
- *   - Faint coordinate grid with alphanumeric labels (A1, B4 …)
- *   - Procedural topographic contour lines
- *   - Launch-zone separator line (hostile territory boundary)
+ * Draws the static tactical backdrop plus the animated contested frontline.
  *
- * Everything here is pre-rendered once into an offscreen canvas and blitted
- * to the main canvas each frame — no per-frame work beyond a single drawImage.
+ * Two-phase rendering strategy:
+ *   Static (offscreen canvas, rebuilt on resize or new frontline):
+ *     - Dark terrain fill
+ *     - Territory gradient fills (amber above frontline, green below)
+ *     - Topographic contour lines
+ *     - Faint coordinate grid with alphanumeric labels
+ *
+ *   Dynamic (drawn each frame on top of the blitted offscreen):
+ *     - Animated dashed amber frontline border (lineDashOffset drifts over time)
+ *
+ * Everything static is pre-rendered once into an offscreen canvas and blitted
+ * to the main canvas each frame — only the animated line adds per-frame work.
  */
 
-import { COLORS, LAUNCH_ZONE_RATIO } from '@/constants.js';
+import { COLORS } from '@/constants.js';
 
 // Grid cell size in logical pixels — determines coordinate label density
 const GRID_CELL = 80;
@@ -21,11 +27,13 @@ const TOPO_LINE_COUNT = 12;
 
 export class BackgroundRenderer {
   /**
-   * @param {HTMLCanvasElement} canvas  The background canvas (Layer 0)
+   * @param {HTMLCanvasElement}                        canvas    The background canvas (Layer 0)
+   * @param {import('@/GameState.js').GameState}        gameState
    */
-  constructor(canvas) {
-    this.canvas = canvas;
-    this.ctx    = canvas.getContext('2d');
+  constructor(canvas, gameState) {
+    this.canvas    = canvas;
+    this.ctx       = canvas.getContext('2d');
+    this.gameState = gameState;
 
     /** Offscreen canvas holding the static background. */
     this._offscreen    = null;
@@ -33,12 +41,13 @@ export class BackgroundRenderer {
 
     /** Pre-generated topographic contour paths (reused each frame). */
     this._topoPaths = [];
+
   }
 
   // ── Public API ────────────────────────────────────────────────────────────────
 
   /**
-   * Called whenever the canvas is resized.
+   * Called whenever the canvas is resized or the frontline changes.
    * Rebuilds the offscreen canvas and regenerates procedural content.
    */
   resize() {
@@ -65,7 +74,7 @@ export class BackgroundRenderer {
 
   /**
    * Renders everything into the offscreen canvas.
-   * Called once on resize; result is reused every frame.
+   * Called on resize and when the frontline changes; result is reused every frame.
    */
   _renderStatic(w, h) {
     const ctx = this._offscreenCtx;
@@ -74,14 +83,112 @@ export class BackgroundRenderer {
     ctx.fillStyle = COLORS.BG;
     ctx.fillRect(0, 0, w, h);
 
-    // Topographic contour lines
+    // Territory gradient fills (enemy / friendly zones)
+    this._drawTerritoryFills(ctx, w, h);
+
+    // Topographic contour lines (over the fills)
     this._drawTopoLines(ctx, w, h);
 
-    // Tactical grid
+    // Tactical grid (topmost static layer)
     this._drawGrid(ctx, w, h);
 
-    // Launch-zone separator
-    this._drawLaunchZoneLine(ctx, w, h);
+    // Static frontline border line
+    this._drawFrontlineBorder(ctx, w, h);
+  }
+
+  // ── Territory fills ───────────────────────────────────────────────────────────
+
+  /**
+   * Draws two gradient-filled regions divided by the frontline curve:
+   *   - Enemy territory above (faint amber)
+   *   - Friendly territory below (faint blue-green)
+   *
+   * Falls back to a flat horizontal divider at frontlineMeanAltitude when no
+   * frontline has been generated yet (pre-boot safety guard).
+   */
+  _drawTerritoryFills(ctx, w, h) {
+    const frontline = this.gameState.frontline;
+    const flatY     = h * this.gameState.params.simulation.frontlineMeanAltitude;
+
+    // ── Enemy territory (above frontline) ─────────────────────────────────────
+    const enemyGrad = ctx.createLinearGradient(0, 0, 0, h);
+    enemyGrad.addColorStop(0,   'rgba(180, 90,  0, 0.18)');
+    enemyGrad.addColorStop(0.9, 'rgba(140, 60,  0, 0.05)');
+    enemyGrad.addColorStop(1,   'rgba(140, 60,  0, 0.00)');
+
+    ctx.save();
+    ctx.fillStyle = enemyGrad;
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(w, 0);
+    if (frontline) {
+      // Trace frontline right-to-left along its bottom edge to close the region
+      for (let x = w; x >= 0; x--) {
+        ctx.lineTo(x, frontline[x]);
+      }
+    } else {
+      ctx.lineTo(w, flatY);
+      ctx.lineTo(0, flatY);
+    }
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+
+    // ── Friendly territory (below frontline) ──────────────────────────────────
+    const friendlyGrad = ctx.createLinearGradient(0, 0, 0, h);
+    friendlyGrad.addColorStop(0,   'rgba(0, 80, 40, 0.00)');
+    friendlyGrad.addColorStop(0.2, 'rgba(0, 80, 40, 0.05)');
+    friendlyGrad.addColorStop(1,   'rgba(0, 100, 50, 0.16)');
+
+    ctx.save();
+    ctx.fillStyle = friendlyGrad;
+    ctx.beginPath();
+    if (frontline) {
+      ctx.moveTo(0, frontline[0]);
+      for (let x = 1; x <= w; x++) {
+        ctx.lineTo(x, frontline[x]);
+      }
+    } else {
+      ctx.moveTo(0, flatY);
+      ctx.lineTo(w, flatY);
+    }
+    ctx.lineTo(w, h);
+    ctx.lineTo(0, h);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+  }
+
+  // ── Static frontline border ───────────────────────────────────────────────────
+
+  /**
+   * Draws a static amber line along the frontline curve.
+   * Rendered once into the offscreen canvas on resize/frontline change.
+   *
+   * @param {CanvasRenderingContext2D} ctx
+   * @param {number} w
+   * @param {number} h
+   */
+  _drawFrontlineBorder(ctx, w, h) {
+    const frontline = this.gameState.frontline;
+    if (!frontline) return;
+
+    ctx.save();
+
+    ctx.strokeStyle = COLORS.FRONTLINE_LINE;
+    ctx.lineWidth   = 1.5;
+    ctx.shadowColor = 'rgba(255, 176, 0, 0.30)';
+    ctx.shadowBlur  = 4;
+
+    ctx.beginPath();
+    ctx.moveTo(0, frontline[0]);
+    for (let x = 1; x <= w; x++) {
+      ctx.lineTo(x, frontline[x]);
+    }
+    ctx.stroke();
+
+    ctx.shadowBlur = 0;
+    ctx.restore();
   }
 
   // ── Grid ──────────────────────────────────────────────────────────────────────
@@ -142,53 +249,6 @@ export class BackgroundRenderer {
       }
       ctx.stroke();
     }
-  }
-
-  // ── Launch-zone separator ─────────────────────────────────────────────────────
-
-  _drawLaunchZoneLine(ctx, w, h) {
-    const y = h * LAUNCH_ZONE_RATIO;
-
-    // Separator line — brighter so it reads clearly
-    ctx.strokeStyle = 'rgba(255, 32, 32, 0.70)';
-    ctx.lineWidth   = 1.5;
-    ctx.setLineDash([8, 6]);
-    ctx.beginPath();
-    ctx.moveTo(0, y);
-    ctx.lineTo(w, y);
-    ctx.stroke();
-    ctx.setLineDash([]);
-
-    // Labels — larger font, full opacity, with a dark backing rect for legibility
-    ctx.font = 'bold 11px "Share Tech Mono", monospace';
-
-    const labelAbove = '▲  HOSTILE LAUNCH ZONE';
-    const labelBelow = '▼  DEFENDED TERRITORY';
-    const pad = 5;
-
-    // Back-fill above label
-    const wAbove = ctx.measureText(labelAbove).width;
-    ctx.fillStyle = 'rgba(5, 15, 10, 0.70)';
-    ctx.fillRect(6, y - 17, wAbove + pad * 2, 14);
-
-    ctx.fillStyle  = 'rgba(255, 80, 80, 0.95)';
-    ctx.shadowColor = 'rgba(255, 32, 32, 0.6)';
-    ctx.shadowBlur  = 6;
-    ctx.textAlign   = 'left';
-    ctx.fillText(labelAbove, 8 + pad, y - 6);
-
-    // Back-fill below label
-    const wBelow = ctx.measureText(labelBelow).width;
-    ctx.fillStyle = 'rgba(5, 15, 10, 0.70)';
-    ctx.shadowBlur = 0;
-    ctx.fillRect(6, y + 4, wBelow + pad * 2, 14);
-
-    ctx.fillStyle   = 'rgba(0, 220, 80, 0.95)';
-    ctx.shadowColor = 'rgba(0, 255, 65, 0.5)';
-    ctx.shadowBlur  = 6;
-    ctx.fillText(labelBelow, 8 + pad, y + 15);
-
-    ctx.shadowBlur = 0;
   }
 }
 

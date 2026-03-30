@@ -16,6 +16,7 @@
  */
 
 import { DEFAULTS, PHASE } from '@/constants.js';
+import { getFrontlineY as _getFY } from '@/systems/FrontlineGenerator.js';
 
 export class GameState {
   constructor() {
@@ -28,6 +29,14 @@ export class GameState {
     // ── Canvas dimensions (set by Renderer after it measures the viewport) ───
     this.canvasWidth  = 0;
     this.canvasHeight = 0;
+
+    // ── Frontline curve ────────────────────────────────────────────────────────
+    /**
+     * Float32Array of y-values for the procedural frontline, indexed by pixel
+     * column. Null until the first map generation.
+     * @type {Float32Array|null}
+     */
+    this.frontline = null;
 
     // ── Entity arrays (populated by respective systems) ───────────────────────
     /** @type {import('@/entities/Building.js').Building[]} */
@@ -107,6 +116,32 @@ export class GameState {
       buildingsDestroyed:  destroyed,
       engagementTime:      this.engagementTime,
     };
+  }
+
+  // ── Frontline helpers ─────────────────────────────────────────────────────────
+
+  /**
+   * Store a newly-generated frontline and notify listeners so the background
+   * renderer can rebuild its territory fills.
+   * @param {Float32Array} points
+   */
+  setFrontline(points) {
+    this.frontline = points;
+    this._emit('frontlineChanged');
+  }
+
+  /**
+   * Return the frontline y-coordinate at canvas column x.
+   * Falls back to canvasHeight × frontlineMeanAltitude before the first
+   * frontline is generated.
+   * @param {number} x
+   * @returns {number}
+   */
+  getFrontlineY(x) {
+    if (!this.frontline) {
+      return this.canvasHeight * this.params.simulation.frontlineMeanAltitude;
+    }
+    return _getFY(this.frontline, x);
   }
 
   // ── Param helpers ────────────────────────────────────────────────────────────

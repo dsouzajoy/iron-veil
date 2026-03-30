@@ -18,7 +18,8 @@ import { StatusPanel }       from './StatusPanel.js';
 import { AfterActionReport } from './AfterActionReport.js';
 import { Tutorial }          from './Tutorial.js';
 import { Battery }           from '@/entities/Battery.js';
-import { LAUNCH_ZONE_RATIO, PHASE } from '@/constants.js';
+import { PHASE } from '@/constants.js';
+import { generateFrontline } from '@/systems/FrontlineGenerator.js';
 
 /** Pixel radius within which clicking an existing battery selects/removes it. */
 const BATTERY_HIT_RADIUS = 18;
@@ -101,11 +102,21 @@ export class UIController {
 
   _handleGenerateMap() {
     const gs = this.gameState;
+
+    const frontline = generateFrontline(
+      gs.canvasWidth,
+      gs.canvasHeight,
+      gs.params.simulation.frontlineRoughness,
+      gs.params.simulation.frontlineMeanAltitude,
+    );
+    gs.setFrontline(frontline);   // emits 'frontlineChanged' → background.resize()
+
     gs.buildings = this.generateMap({
       canvasWidth:    gs.canvasWidth,
       canvasHeight:   gs.canvasHeight,
       count:          gs.params.simulation.installationCount,
       tierIIIPercent: gs.params.simulation.tierIIIPercent,
+      frontline,
     });
     gs.batteries = [];
     this._setHoveredBattery(-1);
@@ -261,7 +272,7 @@ export class UIController {
    */
   _isValidPlacement(pos) {
     const gs     = this.gameState;
-    const minY   = gs.canvasHeight * LAUNCH_ZONE_RATIO;
+    const minY   = gs.getFrontlineY(pos.x);   // per-column irregular boundary
     const budget = gs.params.simulation.batteryBudget;
 
     return (

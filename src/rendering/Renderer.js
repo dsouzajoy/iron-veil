@@ -33,9 +33,12 @@ export class Renderer {
     this._dynamicCanvas = document.getElementById('canvas-dynamic');
 
     // Instantiate sub-renderers
-    this.background = new BackgroundRenderer(this._bgCanvas);
+    this.background = new BackgroundRenderer(this._bgCanvas, gameState);
     this.entities   = new EntityRenderer(this._entityCanvas);
     this.dynamic    = new DynamicRenderer(this._dynamicCanvas);
+
+    // Rebuild the static background whenever a new frontline is generated
+    gameState.on('frontlineChanged', () => this.background.resize());
 
     // Initial sizing
     this.resize();

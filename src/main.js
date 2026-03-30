@@ -31,7 +31,8 @@ import { ScoringSystem }    from './systems/ScoringSystem.js';
 import { AudioSystem }      from './audio/AudioSystem.js';
 import { UIController }     from './ui/UIController.js';
 import { HostileMissile }   from './entities/HostileMissile.js';
-import { MAX_DELTA, PHASE, LAUNCH_ZONE_RATIO, HOSTILE_LAUNCH_STAGGER } from './constants.js';
+import { MAX_DELTA, PHASE, HOSTILE_LAUNCH_STAGGER } from './constants.js';
+import { generateFrontline } from './systems/FrontlineGenerator.js';
 
 // ── 1. Instantiate core systems ───────────────────────────────────────────────
 
@@ -64,7 +65,8 @@ gameState.on('phaseChange', phase => {
 function scheduleHostiles() {
   const gs      = gameState;
   const count   = gs.params.hostile.launchCount;
-  const launchY = gs.canvasHeight * LAUNCH_ZONE_RATIO * 0.5;
+  // Spawn well within enemy territory — 40% of the mean-altitude height
+  const launchY = gs.canvasHeight * gs.params.simulation.frontlineMeanAltitude * 0.4;
 
   const schedule = [];
 
@@ -140,11 +142,21 @@ const uiController = new UIController({
 /** Kick off a fresh DEPLOYMENT phase with a generated map. */
 function initDeployment() {
   const gs = gameState;
+
+  const frontline = generateFrontline(
+    gs.canvasWidth,
+    gs.canvasHeight,
+    gs.params.simulation.frontlineRoughness,
+    gs.params.simulation.frontlineMeanAltitude,
+  );
+  gs.setFrontline(frontline);   // emits 'frontlineChanged' → background.resize()
+
   gs.buildings = generateMap({
     canvasWidth:    gs.canvasWidth,
     canvasHeight:   gs.canvasHeight,
     count:          gs.params.simulation.installationCount,
     tierIIIPercent: gs.params.simulation.tierIIIPercent,
+    frontline,
   });
   gs.startDeployment();
   renderer.markEntitiesDirty();
@@ -283,11 +295,19 @@ window.addEventListener('resize', () => {
   if (gameState.phase === PHASE.DEPLOYMENT) {
     const gs = gameState;
     if (gs.batteries.length === 0) {
+      const frontline = generateFrontline(
+        gs.canvasWidth,
+        gs.canvasHeight,
+        gs.params.simulation.frontlineRoughness,
+        gs.params.simulation.frontlineMeanAltitude,
+      );
+      gs.setFrontline(frontline);
       gs.buildings = generateMap({
         canvasWidth:    gs.canvasWidth,
         canvasHeight:   gs.canvasHeight,
         count:          gs.params.simulation.installationCount,
         tierIIIPercent: gs.params.simulation.tierIIIPercent,
+        frontline,
       });
     }
     renderer.markEntitiesDirty();
