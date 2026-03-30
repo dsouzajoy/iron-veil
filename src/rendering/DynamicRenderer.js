@@ -66,6 +66,13 @@ export class DynamicRenderer {
       this._drawDeploymentStatus(ctx, w, h, gameState);
     }
 
+    // Enemy launch sites (ENGAGEMENT phase only)
+    if (gameState.phase === PHASE.ENGAGEMENT) {
+      for (let i = 0; i < gameState.launchSites.length; i++) {
+        this._drawLaunchSite(ctx, gameState.launchSites[i], i + 1);
+      }
+    }
+
     // Explosions (draw before missiles so they appear under live objects)
     for (const exp of gameState.explosions) {
       if (exp.active) this._drawExplosion(ctx, exp);
@@ -80,6 +87,59 @@ export class DynamicRenderer {
     for (const intr of gameState.interceptors) {
       if (intr.active) this._drawInterceptor(ctx, intr);
     }
+  }
+
+  // ── Enemy launch site ─────────────────────────────────────────────────────────
+
+  /**
+   * Draw an enemy launch site marker — an upward-pointing chevron on a base
+   * platform, labelled LAU-N, in amber/yellow to match enemy territory color.
+   *
+   * @param {CanvasRenderingContext2D} ctx
+   * @param {{x:number, y:number}} site
+   * @param {number} index  1-based site number for the label
+   */
+  _drawLaunchSite(ctx, site, index) {
+    const { x, y } = site;
+    const RED_BRIGHT = COLORS.RED;
+    const RED_DIM    = 'rgba(255, 32, 32, 0.15)';
+    const RED_GLOW   = 'rgba(255, 32, 32, 0.7)';
+
+    ctx.save();
+    ctx.translate(x, y);
+
+    ctx.shadowColor = RED_GLOW;
+    ctx.shadowBlur  = 8;
+
+    // ── Base platform (horizontal bar) ───────────────────────────────────────
+    ctx.strokeStyle = RED_BRIGHT;
+    ctx.lineWidth   = 2;
+    ctx.beginPath();
+    ctx.moveTo(-10, 6);
+    ctx.lineTo(10, 6);
+    ctx.stroke();
+
+    // ── Launch chevron (upward-pointing arrow) ────────────────────────────────
+    ctx.strokeStyle = RED_BRIGHT;
+    ctx.fillStyle   = RED_DIM;
+    ctx.lineWidth   = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(0, -10);       // tip
+    ctx.lineTo(-7, 6);        // bottom-left
+    ctx.lineTo(0, 2);         // inner notch
+    ctx.lineTo(7, 6);         // bottom-right
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    // ── Label ─────────────────────────────────────────────────────────────────
+    ctx.shadowBlur  = 6;
+    ctx.fillStyle   = RED_BRIGHT;
+    ctx.font        = 'bold 9px "Share Tech Mono", monospace';
+    ctx.textAlign   = 'center';
+    ctx.fillText(`LAU-0${index}`, 0, 18);
+
+    ctx.restore();
   }
 
   // ── Hostile missile ───────────────────────────────────────────────────────────

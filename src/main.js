@@ -68,10 +68,21 @@ function scheduleHostiles() {
   // Spawn well within enemy territory — 40% of the mean-altitude height
   const launchY = gs.canvasHeight * gs.params.simulation.frontlineMeanAltitude * 0.4;
 
+  // Generate 2–4 fixed launch sites spread across enemy territory
+  const siteCount = 2 + Math.floor(Math.random() * 3);  // 2, 3, or 4
+  gs.launchSites = [];
+  for (let s = 0; s < siteCount; s++) {
+    const x = (gs.canvasWidth * 0.1) + (s / (siteCount - 1 || 1)) * (gs.canvasWidth * 0.8)
+              + (Math.random() - 0.5) * (gs.canvasWidth * 0.1);
+    gs.launchSites.push({ x: Math.max(gs.canvasWidth * 0.05, Math.min(gs.canvasWidth * 0.95, x)), y: launchY });
+  }
+
   const schedule = [];
 
   for (let i = 0; i < count; i++) {
-    const launchX = (gs.canvasWidth * 0.1) + Math.random() * (gs.canvasWidth * 0.8);
+    // Assign each missile to a launch site (cycling through them)
+    const site    = gs.launchSites[i % gs.launchSites.length];
+    const launchX = site.x;
     const target  = _pickTarget(gs);
 
     const missile = new HostileMissile({
@@ -180,6 +191,7 @@ function returnToDeployment() {
   gs.hostiles      = [];
   gs.interceptors  = [];
   gs.explosions    = [];
+  gs.launchSites   = [];
   gs.buildings.forEach(b => { b.destroyed = false; });
   gs.startDeployment();
   renderer.markEntitiesDirty();

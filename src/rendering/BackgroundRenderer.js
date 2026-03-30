@@ -206,7 +206,7 @@ export class BackgroundRenderer {
     const labelX = 18;  // distance from left edge
 
     _drawVerticalLabel(ctx, 'HOSTILE LAUNCH ZONE', labelX, enemyCenterY,
-      'rgba(255, 100, 100, 1.0)', 'rgba(255, 32, 32, 1.0)', pad);
+      'rgba(255, 80, 80, 1.0)', 'rgba(255, 32, 32, 1.0)', pad);
 
     _drawVerticalLabel(ctx, 'DEFENDED TERRITORY', labelX, friendlyCenterY,
       'rgba(0, 255, 100, 1.0)', 'rgba(0, 255, 65, 1.0)', pad);

@@ -50,8 +50,8 @@ export class EntityRenderer {
       this._drawBuilding(ctx, building);
     }
 
-    // Draw batteries (with envelope only during DEPLOYMENT)
-    const showEnvelope = gameState.phase === PHASE.DEPLOYMENT;
+    // Draw batteries (engagement envelope always visible)
+    const showEnvelope = true;
     for (const battery of gameState.batteries) {
       this._drawBattery(ctx, battery, showEnvelope);
     }

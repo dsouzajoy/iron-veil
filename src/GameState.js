@@ -30,6 +30,14 @@ export class GameState {
     this.canvasWidth  = 0;
     this.canvasHeight = 0;
 
+    // ── Enemy launch sites ────────────────────────────────────────────────────
+    /**
+     * Array of {x, y} positions for enemy launch sites.
+     * Populated when an engagement begins; cleared on return to deployment.
+     * @type {Array<{x:number, y:number}>}
+     */
+    this.launchSites = [];
+
     // ── Frontline curve ────────────────────────────────────────────────────────
     /**
      * Float32Array of y-values for the procedural frontline, indexed by pixel
