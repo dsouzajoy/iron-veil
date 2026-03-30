@@ -9,5 +9,6 @@ export default defineConfig({
   server: {
     // Bind to all interfaces so it works inside containers / remote dev too
     host: true,
+    open: true,
   },
 });
