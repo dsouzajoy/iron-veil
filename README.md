@@ -61,7 +61,9 @@ All parameters are tunable in real time from the right-side terminal panel.
 | Interceptor Speed | 180 px/s | 80 – 400 | Launch velocity |
 | Turn Rate | 2.5 r/s | 0.5 – 10 | Max angular velocity (rad/s) |
 | Kill Radius | 20 px | 5 – 60 | Blast radius on detonation |
-| Guidance Algorithm | Predictive | — | Predictive Pursuit or Proportional Navigation |
+| Guidance Algorithm | APN | — | Augmented Proportional Navigation (default) or Proportional Navigation |
+| Nav Constant | 3 | 1 – 6 | Navigation constant N used by both APN and PN |
+| APN Gain | 1.0 | 0.0 – 2.0 | Scales the APN lateral-acceleration correction term (0 = pure PN) |
 
 ### Hostile Parameters
 
@@ -120,11 +122,17 @@ All parameters are tunable in real time from the right-side terminal panel.
 
 ## Guidance Algorithms
 
-### Predictive Pursuit (default)
-Projects the hostile's future position based on its current velocity and steers toward the predicted intercept point. Effective against straight-line and mildly maneuvering targets.
+### Augmented Proportional Navigation — APN (default)
+Extends PN by observing the target's lateral acceleration each frame and adding a feed-forward correction term:
 
-### Proportional Navigation
-Measures the rate of change of the line-of-sight (LOS) angle to the target and applies lateral acceleration proportional to that rate × navigation constant N (4). More accurate against maneuvering targets; used in real-world missile systems.
+```
+lateralAccelCommand = N × Vc × λ̇  +  (N/2) × apnGain × aT⊥
+```
+
+Where `Vc` is closing speed, `λ̇` is the LOS rotation rate, and `aT⊥` is the target's lateral acceleration (estimated from its velocity change this frame). The correction term anticipates and counters evasive maneuvers before the LOS rate builds — dramatically improving intercept performance against terminal-phase jinking and EVADE-mode hostiles. Configurable via **NAV CONSTANT** (N) and **APN GAIN**.
+
+### Proportional Navigation (fallback)
+Measures the rate of change of the line-of-sight (LOS) angle to the target and applies lateral acceleration proportional to that rate × N. Effective against constant-velocity targets; becomes less reliable when the hostile is actively maneuvering. Switch to PN via the GUIDANCE ALGORITHM toggle to observe the difference in tracking quality.
 
 ---
 
@@ -163,7 +171,7 @@ iron-veil/
     ├── systems/
     │   ├── MapGenerator.js      # Poisson-disc building placement
     │   ├── FrontlineGenerator.js# Procedural midpoint-displacement frontline
-    │   ├── GuidanceSystem.js    # Predictive Pursuit + Proportional Navigation
+    │   ├── GuidanceSystem.js    # Augmented Proportional Navigation (APN) + PN
     │   ├── TargetAssignment.js  # Per-battery fire-control, deduplication
     │   ├── CollisionSystem.js   # Hit detection, building impacts
     │   └── ScoringSystem.js     # Live score accumulation + rating

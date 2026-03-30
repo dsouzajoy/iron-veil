@@ -128,23 +128,28 @@ const STEPS = [
   {
     title: 'GUIDANCE ALGORITHMS',
     body: `
-      <p>Each interceptor uses one of two steering algorithms to home in on its target.</p>
+      <p>Each interceptor uses one of two steering algorithms to home in on its target,
+      selectable via the <b>GUIDANCE ALGORITHM</b> toggle in Battery Systems.</p>
 
       <div class="tut-algo">
-        <div class="tut-algo-title">PREDICTIVE PURSUIT (default)</div>
-        <p>The interceptor estimates where the hostile <em>will be</em> when it arrives
-        and flies toward that predicted intercept point. Simple and efficient against
-        straight-line or mildly curving targets.</p>
-        <p class="tut-hint">Best for: BALLISTIC flight path, low-speed hostiles.</p>
+        <div class="tut-algo-title">APN — AUGMENTED PROPORTIONAL NAVIGATION (default)</div>
+        <p>Extends Proportional Navigation by observing the target's lateral acceleration
+        each frame and adding a feed-forward correction term. This anticipates and counters
+        evasive maneuvers <em>before</em> the LOS rate builds — the interceptor stays
+        locked even through sharp terminal-phase jinks.</p>
+        <p>The correction scales with <b>NAV CONSTANT</b> (N) and <b>APN GAIN</b> —
+        higher gain amplifies the correction for aggressively maneuvering targets.
+        Setting gain to 0 degrades APN to standard PN behavior.</p>
+        <p class="tut-hint">Recommended for all evasion modes. Essential against EVADE + terminal-phase hostiles.</p>
       </div>
 
       <div class="tut-algo">
-        <div class="tut-algo-title">PROPORTIONAL NAVIGATION (PROP NAV)</div>
+        <div class="tut-algo-title">PROP NAV — PROPORTIONAL NAVIGATION</div>
         <p>Measures the rate of change of the line-of-sight (LOS) angle to the target
-        each frame. Applies lateral acceleration proportional to that rotation rate ×
-        navigation constant N (4). The interceptor drives the LOS rate to zero — the
-        same principle used in real-world air-to-air missiles.</p>
-        <p class="tut-hint">Best for: JINK or EVADE evasion modes, fast or maneuvering hostiles.</p>
+        and applies lateral acceleration proportional to that rotation rate × N.
+        The interceptor drives the LOS rate to zero — the same principle used in
+        real-world air-to-air missiles.</p>
+        <p class="tut-hint">Effective against BALLISTIC or straight-line hostiles. Degrades against terminal-phase maneuvering — switch to APN for better results.</p>
       </div>
     `,
   },
@@ -165,11 +170,9 @@ const STEPS = [
         <tr>
           <td>EVASION MODE</td>
           <td>
-            <b>BALLISTIC</b> — pure parabolic arc, no maneuvering. Easiest to intercept.<br>
-            <b>JINK</b> — sinusoidal lateral oscillation during flight. Amplitude = max
-            sideways deviation (px). Frequency = oscillations per second (Hz).<br>
+            <b>BALLISTIC</b> — pure parabolic arc, no deliberate maneuvering. Easiest to intercept.<br>
             <b>EVADE</b> — actively steers away from any interceptor within 150 px.
-            Requires high TURN RATE and PROP NAV guidance to defeat reliably.
+            Raise TURN RATE and use APN guidance to defeat reliably.
           </td>
         </tr>
         <tr>
@@ -181,8 +184,8 @@ const STEPS = [
         </tr>
       </table>
 
-      <p class="tut-hint">JINK AMPLITUDE (px) and JINK FREQUENCY (Hz) only matter
-      when evasion mode is set to JINK.</p>
+      <p class="tut-hint">Terminal phase activates automatically when any interceptor closes within
+      TERMINAL RANGE regardless of evasion mode — all missiles can jink in the final approach.</p>
     `,
   },
 
@@ -220,8 +223,9 @@ const STEPS = [
       <ul class="tut-list">
         <li>Position batteries to maximize coverage of Tier III (★) Command HQ installations.</li>
         <li>Overlapping engagement envelopes give your highest-value targets redundant protection.</li>
-        <li>Raise TURN RATE when facing JINK or EVADE hostiles.</li>
-        <li>Switch to PROP NAV guidance against maneuvering targets.</li>
+        <li>Raise TURN RATE when facing EVADE hostiles or heavy terminal-phase jinking.</li>
+        <li>APN guidance is the default and handles maneuvering targets best — increase APN GAIN for more aggressive correction.</li>
+        <li>Toggle to PROP NAV to compare intercept performance against APN side-by-side.</li>
         <li>Use TIME SCALE (right panel → Simulation) to slow down and observe the guidance algorithms in detail.</li>
         <li>After placing a battery, click it again to reposition it before pressing [ENGAGE].</li>
       </ul>
