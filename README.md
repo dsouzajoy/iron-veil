@@ -1,6 +1,6 @@
 # IRON VEIL — Missile Defense Simulation
 
-A Cold War-era tactical missile defense simulation built with vanilla JavaScript and HTML5 Canvas. Deploy interceptor batteries, tune guidance algorithms, and defend your installations against incoming ballistic threats.
+A Cold War-era tactical missile defense simulation built with vanilla JavaScript and HTML5 Canvas. Deploy interceptor batteries, tune guidance algorithms, and defend your installations against incoming ballistic threats with terminal-phase evasion across a procedurally generated frontline.
 
 ![Game Phase: Deployment → Engagement → After-Action Report]
 
@@ -38,7 +38,7 @@ npm run preview  # Preview the production build locally
 
 | Action | Input |
 |---|---|
-| Place battery | Click in the defended zone (below the dashed line) |
+| Place battery | Click in the defended zone (below the frontline) |
 | Preview range | Hover over the defended zone |
 | Generate new map | `[GENERATE MAP]` button |
 | Start engagement | `[ENGAGE]` button |
@@ -69,9 +69,9 @@ All parameters are tunable in real time from the right-side terminal panel.
 |---|---|---|---|
 | Launch Count | 12 | 5 – 30 | Missiles per engagement |
 | Speed | 120 px/s | 60 – 300 | Cruise velocity |
-| Evasion Mode | Ballistic | — | None / Jink / Evade |
-| Jink Amplitude | 0 px | 0 – 80 | Lateral oscillation magnitude |
-| Jink Frequency | 0 Hz | 0 – 5 | Oscillation rate |
+| Evasion Mode | Ballistic | — | Ballistic / Evade |
+| Terminal Range | 120 px | 60 – 200 | Interceptor proximity that triggers terminal phase maneuvering |
+| Terminal Force | 80 px/s | 20 – 160 | Lateral delta-v applied per maneuver in terminal phase |
 | Flight Path | Ballistic | — | Parabolic arc or straight line |
 
 ### Simulation
@@ -83,6 +83,13 @@ All parameters are tunable in real time from the right-side terminal panel.
 | Installations | 10 | 5 – 20 | Buildings per engagement |
 | Battery Budget | 3 | 1 – 8 | Batteries the player may place |
 | Tier III % | 20% | 0% – 60% | Fraction of high-value HQ installations |
+
+### Map & Terrain
+
+| Parameter | Default | Range | Description |
+|---|---|---|---|
+| Frontline Roughness | 0.5 | 0.0 – 1.0 | Irregularity of the procedural enemy/friendly border (0 = nearly flat) |
+| Frontline Altitude | 0.30 | 0.10 – 0.60 | Mean altitude of the frontline as a fraction from the top of the map |
 
 ---
 
@@ -125,9 +132,12 @@ Measures the rate of change of the line-of-sight (LOS) angle to the target and a
 
 | Mode | Behavior |
 |---|---|
-| **BALLISTIC** | Pure parabolic/straight arc — no deviation |
-| **JINK** | Sinusoidal lateral oscillation along flight path. Tune amplitude and frequency |
+| **BALLISTIC** | Pure parabolic/straight arc — no additional deviation |
 | **EVADE** | Actively steers away from interceptors that close within 150 px |
+
+### Terminal Phase Maneuvering
+
+All missiles (regardless of evasion mode) automatically enter **terminal phase** once any interceptor closes within the configured Terminal Range. In terminal phase the missile executes sharp, randomized lateral maneuvers — a sudden lateral delta-v every 0.4–0.8 seconds — to break the interceptor's lock geometry. The missile icon transitions from **amber** (ballistic flight) to **red** as a visual indicator that terminal phase is active. Terminal phase is a one-way latch; a missile cannot return to ballistic behavior once triggered.
 
 ---
 
@@ -151,11 +161,12 @@ iron-veil/
     │   ├── Interceptor.js     # Interceptor: guidance state, trail, lifetime
     │   └── Explosion.js       # Expanding ring effect
     ├── systems/
-    │   ├── MapGenerator.js    # Poisson-disc building placement
-    │   ├── GuidanceSystem.js  # Predictive Pursuit + Proportional Navigation
-    │   ├── TargetAssignment.js# Per-battery fire-control, deduplication
-    │   ├── CollisionSystem.js # Hit detection, building impacts
-    │   └── ScoringSystem.js   # Live score accumulation + rating
+    │   ├── MapGenerator.js      # Poisson-disc building placement
+    │   ├── FrontlineGenerator.js# Procedural midpoint-displacement frontline
+    │   ├── GuidanceSystem.js    # Predictive Pursuit + Proportional Navigation
+    │   ├── TargetAssignment.js  # Per-battery fire-control, deduplication
+    │   ├── CollisionSystem.js   # Hit detection, building impacts
+    │   └── ScoringSystem.js     # Live score accumulation + rating
     ├── rendering/
     │   ├── Renderer.js        # Canvas orchestrator, resize handler
     │   ├── BackgroundRenderer.js  # Layer 0: grid, topo lines, radar sweep
