@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>IRON VEIL — MISSILE DEFENSE SYSTEM</title>
+
+  <!-- Phosphor-green monospace font — must load before first paint to avoid FOUT -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap"
+    rel="stylesheet"
+  />
+
+  <link rel="stylesheet" href="/styles/main.css" />
+</head>
+<body>
+  <div id="app">
+
+    <!-- ── Canvas stack (Layers 0–2) ──────────────────────────────────── -->
+    <div id="canvas-container">
+      <!-- Layer 0: static background — grid, terrain, scanlines, radar sweep -->
+      <canvas id="canvas-bg"></canvas>
+
+      <!-- Layer 1: semi-static entities — buildings, placed batteries -->
+      <canvas id="canvas-entities"></canvas>
+
+      <!-- Layer 2: fully dynamic — missiles, interceptors, explosions, aim lines -->
+      <canvas id="canvas-dynamic"></canvas>
+    </div>
+
+    <!-- ── Right-side parameter terminal (Layer 3 — DOM) ─────────────── -->
+    <aside id="param-panel">
+      <!-- Populated by ParameterPanel.js -->
+    </aside>
+
+  </div>
+
+  <!-- ── After-Action Report overlay (hidden until engagement ends) ──── -->
+  <div id="after-action-overlay" class="hidden">
+    <!-- Populated by AfterActionReport.js -->
+  </div>
+
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>
