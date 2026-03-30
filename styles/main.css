@@ -1,0 +1,682 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   IRON VEIL — Global Styles
+   Cold War military CRT terminal aesthetic.
+   All measurements in px; no rem/em to keep things predictable on canvas.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Reset ─────────────────────────────────────────────────────────────── */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+/* ── Root variables ─────────────────────────────────────────────────────── */
+:root {
+  --color-bg:         #050f0a;
+  --color-bg-mid:     #0a1a10;
+  --color-green:      #00ff41;
+  --color-green-dim:  #00882a;
+  --color-green-glow: #39ff14;
+  --color-amber:      #ffb000;
+  --color-red:        #ff2020;
+  --color-cyan:       #00cccc;
+  --color-border:     #1a4a2a;
+  --panel-width:      320px;
+  --font-mono:        'Share Tech Mono', 'Courier New', monospace;
+}
+
+/* ── Body ───────────────────────────────────────────────────────────────── */
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: var(--color-bg);
+  color: var(--color-green);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 1.4;
+  /* Subtle CRT phosphor glow on all text */
+  text-shadow: 0 0 6px var(--color-green-dim);
+  cursor: crosshair;
+}
+
+/* ── App container ──────────────────────────────────────────────────────── */
+#app {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
+
+/* ── Canvas container (fills space left of the side panel) ─────────────── */
+#canvas-container {
+  position: relative;
+  flex: 1;
+  overflow: hidden;
+  background: var(--color-bg);
+}
+
+/* Scanline overlay — CSS pseudo-element so it never touches the canvas */
+#canvas-container::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  /* Repeating dark horizontal lines every 3px */
+  background: repeating-linear-gradient(
+    to bottom,
+    transparent,
+    transparent 2px,
+    rgba(0, 0, 0, 0.25) 2px,
+    rgba(0, 0, 0, 0.25) 3px
+  );
+  pointer-events: none;
+  z-index: 10;
+}
+
+/* CRT vignette — dark edges, brighter center */
+#canvas-container::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    ellipse at center,
+    transparent 60%,
+    rgba(0, 0, 0, 0.55) 100%
+  );
+  pointer-events: none;
+  z-index: 11;
+}
+
+/* All three canvases overlap perfectly */
+#canvas-bg,
+#canvas-entities,
+#canvas-dynamic {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: block;
+}
+
+#canvas-bg      { z-index: 1; }
+#canvas-entities { z-index: 2; }
+#canvas-dynamic  { z-index: 3; }
+
+/* ── Right-side parameter panel ─────────────────────────────────────────── */
+#param-panel {
+  width: var(--panel-width);
+  flex-shrink: 0;
+  height: 100%;
+  background: var(--color-bg);
+  border-left: 1px solid var(--color-border);
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 8px;
+  z-index: 20;
+  /* Subtle inner glow on left edge to suggest CRT depth */
+  box-shadow: inset 4px 0 12px rgba(0, 255, 65, 0.04);
+}
+
+/* Hide default scrollbar on panel — style it minimally */
+#param-panel::-webkit-scrollbar { width: 4px; }
+#param-panel::-webkit-scrollbar-track { background: var(--color-bg); }
+#param-panel::-webkit-scrollbar-thumb { background: var(--color-green-dim); }
+
+/* ── Panel typography ───────────────────────────────────────────────────── */
+.panel-title {
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  color: var(--color-green-dim);
+  text-transform: uppercase;
+  padding: 4px 0 2px;
+}
+
+/* Section header — double-line ASCII box style */
+.section-header {
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  color: var(--color-green);
+  text-transform: uppercase;
+  border-top: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border);
+  padding: 4px 0;
+  margin: 10px 0 6px;
+}
+
+/* ── Parameter row ──────────────────────────────────────────────────────── */
+.param-row {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 8px;
+}
+
+.param-label-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 2px;
+}
+
+.param-label {
+  font-size: 11px;
+  color: var(--color-green-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.param-value {
+  font-size: 12px;
+  color: var(--color-green);
+  min-width: 48px;
+  text-align: right;
+}
+
+/* Custom range slider — terminal bar style */
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 6px;
+  background: var(--color-bg-mid);
+  border: 1px solid var(--color-border);
+  outline: none;
+  cursor: pointer;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 10px;
+  height: 16px;
+  background: var(--color-green);
+  border: none;
+  box-shadow: 0 0 6px var(--color-green);
+  cursor: pointer;
+}
+
+input[type="range"]::-moz-range-thumb {
+  width: 10px;
+  height: 16px;
+  background: var(--color-green);
+  border: none;
+  box-shadow: 0 0 6px var(--color-green);
+  cursor: pointer;
+}
+
+/* ── Toggle / select ────────────────────────────────────────────────────── */
+select,
+.toggle-group {
+  width: 100%;
+  background: var(--color-bg-mid);
+  color: var(--color-green);
+  border: 1px solid var(--color-border);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  padding: 3px 4px;
+  text-transform: uppercase;
+  cursor: pointer;
+  outline: none;
+  appearance: none;
+}
+
+select:focus {
+  border-color: var(--color-green-dim);
+}
+
+/* ── Toggle button group (e.g. guidance algorithm) ──────────────────────── */
+.toggle-group {
+  display: flex;
+  gap: 2px;
+  padding: 0;
+  border: none;
+  background: transparent;
+}
+
+.toggle-btn {
+  flex: 1;
+  background: var(--color-bg-mid);
+  color: var(--color-green-dim);
+  border: 1px solid var(--color-border);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 4px 2px;
+  cursor: pointer;
+  transition: none;
+}
+
+.toggle-btn.active {
+  background: var(--color-green-dim);
+  color: var(--color-bg);
+  border-color: var(--color-green);
+  box-shadow: 0 0 8px var(--color-green-dim);
+}
+
+/* ── Action buttons ─────────────────────────────────────────────────────── */
+.action-btn {
+  display: block;
+  width: 100%;
+  background: transparent;
+  color: var(--color-green);
+  border: 1px solid var(--color-green-dim);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  padding: 7px 4px;
+  cursor: pointer;
+  margin-bottom: 6px;
+  transition: none;
+}
+
+.action-btn:hover {
+  background: var(--color-green-dim);
+  color: var(--color-bg);
+  box-shadow: 0 0 10px var(--color-green-dim);
+}
+
+.action-btn:disabled {
+  color: var(--color-border);
+  border-color: var(--color-border);
+  cursor: not-allowed;
+  box-shadow: none;
+  background: transparent;
+}
+
+.action-btn.primary {
+  border-color: var(--color-green);
+  color: var(--color-green);
+  box-shadow: 0 0 6px rgba(0, 255, 65, 0.2);
+}
+
+.action-btn.danger {
+  border-color: var(--color-red);
+  color: var(--color-red);
+}
+
+.action-btn.danger:hover {
+  background: var(--color-red);
+  color: var(--color-bg);
+}
+
+/* ── Status readout panel (inside param panel, live during engagement) ─── */
+#status-panel {
+  border: 1px solid var(--color-border);
+  padding: 6px 8px;
+  margin-bottom: 8px;
+  background: var(--color-bg-mid);
+}
+
+.status-line {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  padding: 1px 0;
+  color: var(--color-green-dim);
+}
+
+.status-line .status-key {
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.status-line .status-val {
+  color: var(--color-green);
+  font-size: 12px;
+}
+
+.status-line.alert .status-val {
+  color: var(--color-amber);
+}
+
+.status-line.threat .status-val {
+  color: var(--color-red);
+}
+
+/* ── After-action report overlay ────────────────────────────────────────── */
+#after-action-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(5, 15, 10, 0.92);
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-mono);
+}
+
+#after-action-overlay.hidden {
+  display: none;
+}
+
+.aar-box {
+  border: 2px solid var(--color-green-dim);
+  background: var(--color-bg);
+  padding: 32px 40px;
+  min-width: 560px;
+  max-width: 720px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 0 40px rgba(0, 255, 65, 0.12), inset 0 0 30px rgba(0, 0, 0, 0.6);
+  /* Double-line border effect via outline */
+  outline: 1px solid var(--color-border);
+  outline-offset: 4px;
+}
+
+.aar-title {
+  font-size: 18px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--color-green);
+  text-shadow: 0 0 12px var(--color-green);
+  margin-bottom: 4px;
+}
+
+.aar-subtitle {
+  font-size: 11px;
+  color: var(--color-green-dim);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  margin-bottom: 20px;
+}
+
+.aar-section {
+  margin-bottom: 16px;
+}
+
+.aar-section-header {
+  font-size: 11px;
+  color: var(--color-green-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  border-bottom: 1px solid var(--color-border);
+  padding-bottom: 3px;
+  margin-bottom: 8px;
+}
+
+.aar-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.aar-table td {
+  padding: 3px 6px;
+  color: var(--color-green);
+}
+
+.aar-table td:first-child {
+  color: var(--color-green-dim);
+  text-transform: uppercase;
+}
+
+.aar-table td.destroyed {
+  color: var(--color-red);
+}
+
+.aar-table td.survived {
+  color: var(--color-green);
+}
+
+.aar-score {
+  font-size: 28px;
+  color: var(--color-green);
+  text-shadow: 0 0 16px var(--color-green);
+  margin: 8px 0 4px;
+}
+
+.aar-rating {
+  font-size: 14px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  padding: 4px 0;
+}
+
+.aar-rating.critical  { color: var(--color-red); }
+.aar-rating.marginal  { color: var(--color-amber); }
+.aar-rating.acceptable { color: var(--color-cyan); }
+.aar-rating.commendable { color: var(--color-green); }
+.aar-rating.exemplary  { color: var(--color-green); text-shadow: 0 0 12px var(--color-green); }
+
+.aar-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.aar-actions .action-btn {
+  flex: 1;
+  margin-bottom: 0;
+}
+
+/* ── Placement-mode cursor hint ─────────────────────────────────────────── */
+#canvas-dynamic.placing {
+  cursor: crosshair;
+}
+
+/* ── Panel header row (title + help button side by side) ────────────────── */
+.panel-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  padding: 2px 0;
+}
+
+.panel-header-row .panel-title {
+  flex: 1;
+  padding: 0;
+}
+
+.help-btn {
+  flex-shrink: 0;
+  width: auto;
+  padding: 3px 6px;
+  font-size: 10px;
+  margin-bottom: 0;
+}
+
+/* ── Tutorial overlay ────────────────────────────────────────────────────── */
+#tutorial-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(5, 15, 10, 0.88);
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-mono);
+}
+
+#tutorial-overlay.hidden {
+  display: none;
+}
+
+.tut-box {
+  background: var(--color-bg);
+  border: 2px solid var(--color-green-dim);
+  outline: 1px solid var(--color-border);
+  outline-offset: 4px;
+  box-shadow: 0 0 50px rgba(0, 255, 65, 0.10), inset 0 0 30px rgba(0,0,0,0.5);
+  width: min(680px, 92vw);
+  max-height: 90vh;
+  overflow-y: auto;
+  padding: 28px 36px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.tut-box::-webkit-scrollbar { width: 4px; }
+.tut-box::-webkit-scrollbar-track { background: var(--color-bg); }
+.tut-box::-webkit-scrollbar-thumb { background: var(--color-green-dim); }
+
+.tut-classification {
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  color: var(--color-green-dim);
+  text-transform: uppercase;
+  border-bottom: 1px solid var(--color-border);
+  padding-bottom: 6px;
+}
+
+.tut-step-label {
+  font-size: 10px;
+  color: var(--color-green-dim);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.tut-title {
+  font-size: 17px;
+  letter-spacing: 0.16em;
+  color: var(--color-green);
+  text-shadow: 0 0 10px var(--color-green-dim);
+  text-transform: uppercase;
+}
+
+.tut-body {
+  font-size: 12px;
+  color: var(--color-green);
+  line-height: 1.65;
+  flex: 1;
+}
+
+.tut-body p {
+  margin-bottom: 10px;
+}
+
+.tut-body b {
+  color: var(--color-green);
+  text-shadow: 0 0 6px var(--color-green-dim);
+}
+
+.tut-body em {
+  color: var(--color-cyan);
+  font-style: normal;
+}
+
+/* Shared table style used in tutorial body */
+.tut-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 10px;
+  font-size: 11px;
+}
+
+.tut-table td {
+  padding: 4px 8px 4px 0;
+  vertical-align: top;
+  color: var(--color-green);
+}
+
+.tut-table td:first-child {
+  color: var(--color-green-dim);
+  white-space: nowrap;
+  padding-right: 14px;
+}
+
+.tut-unit {
+  color: var(--color-green-dim);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+}
+
+.tut-hint {
+  color: var(--color-green-dim) !important;
+  font-size: 11px;
+  font-style: italic;
+  border-left: 2px solid var(--color-border);
+  padding-left: 8px;
+  margin-top: 6px;
+}
+
+.tut-list {
+  padding-left: 18px;
+  margin-bottom: 10px;
+}
+
+.tut-list li {
+  margin-bottom: 5px;
+}
+
+.tut-algo {
+  border: 1px solid var(--color-border);
+  padding: 10px 12px;
+  margin-bottom: 10px;
+  background: var(--color-bg-mid);
+}
+
+.tut-algo-title {
+  font-size: 12px;
+  color: var(--color-cyan);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+
+/* Color helpers for tutorial content */
+.tut-green { color: var(--color-green); }
+.tut-red   { color: var(--color-red);   }
+.tut-amber { color: var(--color-amber); }
+.tut-cyan  { color: var(--color-cyan);  }
+
+/* Tutorial navigation row */
+.tut-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.tut-nav-btn {
+  width: auto;
+  padding: 5px 14px;
+  font-size: 11px;
+  margin-bottom: 0;
+  flex-shrink: 0;
+}
+
+/* Step indicator dots */
+.tut-dots {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  flex: 1;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.tut-dot {
+  width: 7px;
+  height: 7px;
+  background: var(--color-border);
+  border: 1px solid var(--color-green-dim);
+  display: inline-block;
+  cursor: pointer;
+  transition: none;
+}
+
+.tut-dot.active {
+  background: var(--color-green);
+  border-color: var(--color-green);
+  box-shadow: 0 0 6px var(--color-green-dim);
+}
+
+/* Dismiss / deploy button */
+.tut-dismiss {
+  width: 100%;
+  padding: 9px;
+  font-size: 13px;
+  letter-spacing: 0.12em;
+  margin-bottom: 0;
+}
+
+/* ── Misc utilities ─────────────────────────────────────────────────────── */
+.hidden { display: none !important; }
+
+.amber { color: var(--color-amber); }
+.red   { color: var(--color-red);   }
+.cyan  { color: var(--color-cyan);  }
