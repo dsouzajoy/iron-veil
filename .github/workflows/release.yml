@@ -27,14 +27,14 @@ jobs:
           default_bump: patch
           release_branches: master
 
-      - name: Draft release
+      - name: Create release
         if: steps.tag.outputs.new_tag != ''
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.tag.outputs.new_tag }}
           name: ${{ steps.tag.outputs.new_tag }}
           body: ${{ steps.tag.outputs.changelog }}
-          draft: true
+          draft: false
 
   build-and-deploy:
     needs: tag-and-release
