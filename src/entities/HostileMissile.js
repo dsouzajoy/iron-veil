@@ -70,9 +70,11 @@ export class HostileMissile {
     /** @type {Array<{x:number, y:number}>} */
     this.trail = [];
 
-    // ── Evasion bookkeeping ──────────────────────────────────────────────────
-    /** Direction perpendicular to travel (±1), determined once and held. */
-    this._jinkSign = Math.random() < 0.5 ? 1 : -1;
+    // ── Terminal phase state ─────────────────────────────────────────────────
+    /** True once an interceptor has closed within terminalActivationRange. One-way latch. */
+    this.inTerminalPhase    = false;
+    /** Countdown (s) until next lateral maneuver direction change. */
+    this._terminalJinkTimer = 0;
   }
 
   /**
@@ -95,8 +97,10 @@ export class HostileMissile {
     }
 
     // ── Evasion behaviour ─────────────────────────────────────────────────────
-    if (evasion === 'jink') {
-      this._applyJink(dt, params);
+    // Terminal phase maneuvering: proximity-triggered, always active (replaces jink).
+    this._checkTerminalPhase(params, interceptors);
+    if (this.inTerminalPhase) {
+      this._applyTerminalJink(dt, params);
     } else if (evasion === 'evade') {
       this._applyEvade(dt, params, interceptors);
     }
@@ -114,27 +118,39 @@ export class HostileMissile {
   // ── Private evasion helpers ───────────────────────────────────────────────────
 
   /**
-   * Sinusoidal lateral jink — offsets velocity perpendicular to travel direction.
+   * One-way latch: set inTerminalPhase once any interceptor closes within
+   * terminalActivationRange. Never resets to false.
    */
-  _applyJink(dt, params) {
-    const amp   = params.hostile.jinkAmplitude;
-    const freq  = params.hostile.jinkFrequency;
-    if (amp === 0 || freq === 0) return;
+  _checkTerminalPhase(params, interceptors) {
+    if (this.inTerminalPhase) return; // already latched
+    const threshold = params.hostile.terminalActivationRange;
+    for (const intr of interceptors) {
+      if (!intr.active) continue;
+      if (Math.hypot(intr.x - this.x, intr.y - this.y) < threshold) {
+        this.inTerminalPhase = true;
+        return;
+      }
+    }
+  }
 
-    const speed = Math.hypot(this.vx, this.vy) || 1;
-    // Unit vector along travel
-    const ux = this.vx / speed;
-    const uy = this.vy / speed;
+  /**
+   * Terminal phase maneuvering — applies a sudden lateral delta-v every
+   * 0.4–0.8 s to break the interceptor's lock geometry.
+   */
+  _applyTerminalJink(dt, params) {
+    this._terminalJinkTimer -= dt;
+    if (this._terminalJinkTimer > 0) return;
 
-    // Perpendicular unit vector (rotate 90°)
-    const px = -uy;
-    const py =  ux;
+    // Schedule next direction change
+    this._terminalJinkTimer = 0.4 + Math.random() * 0.4;
 
-    // Oscillation — derivative of sin gives the velocity contribution
-    const jinkVel = amp * 2 * Math.PI * freq * Math.cos(2 * Math.PI * freq * this.elapsed) * this._jinkSign;
+    // Perpendicular to current heading, randomly left or right
+    const travelAngle = Math.atan2(this.vy, this.vx);
+    const sign        = Math.random() < 0.5 ? 1 : -1;
+    const jinkForce   = params.hostile.terminalJinkForce;
 
-    this.x += px * jinkVel * dt;
-    this.y += py * jinkVel * dt;
+    this.vx += -Math.sin(travelAngle) * sign * jinkForce;
+    this.vy +=  Math.cos(travelAngle) * sign * jinkForce;
   }
 
   /**

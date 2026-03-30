@@ -81,11 +81,11 @@ export class ParameterPanel {
     // ── Hostile Parameters ────────────────────────────────────────────────────
     this.container.appendChild(_sectionHeader('[HOSTILE PARAMETERS]'));
 
-    this._addSlider('hostile.launchCount',   'LAUNCH COUNT',  'hostile', 'launchCount');
-    this._addSlider('hostile.speed',         'SPEED',         'hostile', 'speed');
+    this._addSlider('hostile.launchCount',             'LAUNCH COUNT',   'hostile', 'launchCount');
+    this._addSlider('hostile.speed',                   'SPEED',          'hostile', 'speed');
     this._addEvasionSelect();
-    this._addSlider('hostile.jinkAmplitude', 'JINK AMP',      'hostile', 'jinkAmplitude');
-    this._addSlider('hostile.jinkFrequency', 'JINK FREQ',     'hostile', 'jinkFrequency');
+    this._addSlider('hostile.terminalActivationRange', 'TERMINAL RANGE', 'hostile', 'terminalActivationRange');
+    this._addSlider('hostile.terminalJinkForce',       'TERMINAL FORCE', 'hostile', 'terminalJinkForce');
     this._addFlightToggle();
 
     // ── Simulation ────────────────────────────────────────────────────────────
@@ -197,7 +197,7 @@ export class ParameterPanel {
     lbl.appendChild(_el('span', 'param-label', 'EVASION MODE'));
 
     const sel = document.createElement('select');
-    [['none', 'BALLISTIC'], ['jink', 'JINK'], ['evade', 'EVADE']].forEach(([val, text]) => {
+    [['none', 'BALLISTIC'], ['evade', 'EVADE']].forEach(([val, text]) => {
       const opt = document.createElement('option');
       opt.value       = val;
       opt.textContent = text;

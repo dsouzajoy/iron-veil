@@ -95,10 +95,10 @@ export const DEFAULTS = {
     launchCount:   12,
     speed:         120,        // px/s
     flightPath:    'ballistic', // 'ballistic' | 'straight'
-    evasionMode:   'none',      // 'none' | 'jink' | 'evade'
-    jinkAmplitude: 0,           // px lateral deviation
-    jinkFrequency: 0,           // Hz oscillation
-    targetMode:    'weighted',  // 'random' | 'weighted' (by tier importance)
+    evasionMode:             'none',  // 'none' | 'evade'
+    terminalActivationRange: 120,    // px — interceptor proximity that triggers terminal phase
+    terminalJinkForce:       80,     // px/s — lateral delta-v applied per maneuver
+    targetMode:              'weighted', // 'random' | 'weighted' (by tier importance)
   },
 
   // Simulation-wide settings
@@ -127,10 +127,10 @@ export const PARAM_RANGES = {
   'battery.turnRate':         { min: 0.5,  max: 10,   step: 0.1,  unit: 'r/s' },
   'battery.killRadius':       { min: 5,    max: 60,   step: 1,    unit: 'px' },
 
-  'hostile.launchCount':      { min: 5,    max: 30,   step: 1,    unit: '' },
-  'hostile.speed':            { min: 60,   max: 300,  step: 10,   unit: 'px/s' },
-  'hostile.jinkAmplitude':    { min: 0,    max: 80,   step: 1,    unit: 'px' },
-  'hostile.jinkFrequency':    { min: 0,    max: 5,    step: 0.1,  unit: 'Hz' },
+  'hostile.launchCount':              { min: 5,   max: 30,  step: 1,  unit: '' },
+  'hostile.speed':                    { min: 60,  max: 300, step: 10, unit: 'px/s' },
+  'hostile.terminalActivationRange':  { min: 60,  max: 200, step: 5,  unit: 'px' },
+  'hostile.terminalJinkForce':        { min: 20,  max: 160, step: 5,  unit: 'px/s' },
 
   'simulation.gravity':               { min: 0,    max: 200,  step: 5,    unit: 'px/s²' },
   'simulation.timeScale':             { min: 0.25, max: 3,    step: 0.25, unit: '×' },

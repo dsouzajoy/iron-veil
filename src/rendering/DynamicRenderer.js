@@ -145,8 +145,14 @@ export class DynamicRenderer {
   // ── Hostile missile ───────────────────────────────────────────────────────────
 
   _drawHostile(ctx, hostile) {
-    // Exhaust trail (fading, red-dim)
-    this._drawTrail(ctx, hostile.trail, COLORS.RED, 0.4);
+    // Amber during ballistic flight; red once terminal phase activates
+    const missileColor = hostile.inTerminalPhase ? COLORS.RED : COLORS.AMBER;
+    const fillColor    = hostile.inTerminalPhase
+      ? 'rgba(255, 32, 32, 0.15)'
+      : 'rgba(255, 176, 0, 0.15)';
+
+    // Exhaust trail (fading)
+    this._drawTrail(ctx, hostile.trail, missileColor, 0.4);
 
     // V-chevron pointing in direction of travel
     const angle = Math.atan2(hostile.vy, hostile.vx);
@@ -156,10 +162,10 @@ export class DynamicRenderer {
     ctx.translate(hostile.x, hostile.y);
     ctx.rotate(angle);
 
-    ctx.strokeStyle = COLORS.RED;
-    ctx.fillStyle   = 'rgba(255, 32, 32, 0.15)';
+    ctx.strokeStyle = missileColor;
+    ctx.fillStyle   = fillColor;
     ctx.lineWidth   = 1.5;
-    ctx.shadowColor = COLORS.RED;
+    ctx.shadowColor = missileColor;
     ctx.shadowBlur  = 6;
 
     ctx.beginPath();
