@@ -87,7 +87,9 @@ export const DEFAULTS = {
     interceptorSpeed: 180,  // px/s
     turnRate:         2.5,  // rad/s max angular velocity
     killRadius:       20,   // blast radius on detonation (px)
-    guidance:         'predictive', // 'predictive' | 'proportional'
+    guidance:             'apn',  // 'apn' | 'proportional'
+    navigationConstant:   3,      // N for PN/APN (1–6)
+    apnCorrectionGain:    1.0,    // APN bias term gain (0.0–2.0)
   },
 
   // Hostile missile settings
@@ -125,7 +127,9 @@ export const PARAM_RANGES = {
   'battery.range':            { min: 100,  max: 400,  step: 10,   unit: 'px' },
   'battery.interceptorSpeed': { min: 80,   max: 400,  step: 10,   unit: 'px/s' },
   'battery.turnRate':         { min: 0.5,  max: 10,   step: 0.1,  unit: 'r/s' },
-  'battery.killRadius':       { min: 5,    max: 60,   step: 1,    unit: 'px' },
+  'battery.killRadius':          { min: 5,   max: 60,  step: 1,   unit: 'px' },
+  'battery.navigationConstant':  { min: 1,   max: 6,   step: 1,   unit: '' },
+  'battery.apnCorrectionGain':   { min: 0.0, max: 2.0, step: 0.1, unit: '' },
 
   'hostile.launchCount':              { min: 5,   max: 30,  step: 1,  unit: '' },
   'hostile.speed':                    { min: 60,  max: 300, step: 10, unit: 'px/s' },
@@ -152,12 +156,9 @@ export const PHASE = {
 // ── Guidance algorithm identifiers ───────────────────────────────────────────
 
 export const GUIDANCE = {
-  PREDICTIVE:    'predictive',
-  PROPORTIONAL:  'proportional',
+  APN:          'apn',          // Augmented Proportional Navigation (default)
+  PROPORTIONAL: 'proportional', // Standard Proportional Navigation (fallback)
 };
-
-/** Navigation constant N for Proportional Navigation. */
-export const PN_CONSTANT = 4;
 
 // ── Misc physics / behaviour constants ───────────────────────────────────────
 

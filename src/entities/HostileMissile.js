@@ -75,6 +75,11 @@ export class HostileMissile {
     this.inTerminalPhase    = false;
     /** Countdown (s) until next lateral maneuver direction change. */
     this._terminalJinkTimer = 0;
+
+    // ── APN support — previous-frame velocity ────────────────────────────────
+    /** Velocity components at the end of the previous frame, for lateral accel estimation. */
+    this.prevVx = this.vx;
+    this.prevVy = this.vy;
   }
 
   /**
@@ -86,6 +91,10 @@ export class HostileMissile {
    */
   update(dt, params, interceptors) {
     if (!this.active) return;
+
+    // Snapshot velocity before any mutation — used by GuidanceSystem for APN
+    this.prevVx = this.vx;
+    this.prevVy = this.vy;
 
     const gravity    = params.simulation.gravity;
     const flightPath = params.hostile.flightPath;

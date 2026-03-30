@@ -75,8 +75,10 @@ export class ParameterPanel {
     this._addSlider('battery.range',            'ENG. RANGE',        'battery', 'range');
     this._addSlider('battery.interceptorSpeed', 'INTR. SPEED',       'battery', 'interceptorSpeed');
     this._addSlider('battery.turnRate',         'TURN RATE',         'battery', 'turnRate');
-    this._addSlider('battery.killRadius',       'KILL RADIUS',       'battery', 'killRadius');
+    this._addSlider('battery.killRadius',          'KILL RADIUS',   'battery', 'killRadius');
     this._addGuidanceToggle();
+    this._addSlider('battery.navigationConstant',  'NAV CONSTANT',  'battery', 'navigationConstant');
+    this._addSlider('battery.apnCorrectionGain',   'APN GAIN',      'battery', 'apnCorrectionGain');
 
     // ── Hostile Parameters ────────────────────────────────────────────────────
     this.container.appendChild(_sectionHeader('[HOSTILE PARAMETERS]'));
@@ -154,21 +156,21 @@ export class ParameterPanel {
   // ── Guidance toggle ───────────────────────────────────────────────────────────
 
   _addGuidanceToggle() {
-    const row    = _el('div', 'param-row');
-    const lbl    = _el('div', 'param-label', 'GUIDANCE ALGORITHM');
-    const group  = _el('div', 'toggle-group');
+    const row   = _el('div', 'param-row');
+    const lbl   = _el('div', 'param-label', 'GUIDANCE ALGORITHM');
+    const group = _el('div', 'toggle-group');
 
-    const btnPred = _el('button', 'toggle-btn', 'PREDICTIVE');
-    const btnPN   = _el('button', 'toggle-btn', 'PROP NAV');
+    const btnAPN = _el('button', 'toggle-btn', 'APN');
+    const btnPN  = _el('button', 'toggle-btn', 'PROP NAV');
 
     const update = () => {
-      const isPred = this.gameState.params.battery.guidance === GUIDANCE.PREDICTIVE;
-      btnPred.classList.toggle('active', isPred);
-      btnPN.classList.toggle('active', !isPred);
+      const isAPN = this.gameState.params.battery.guidance === GUIDANCE.APN;
+      btnAPN.classList.toggle('active',  isAPN);
+      btnPN.classList.toggle('active',  !isAPN);
     };
 
-    btnPred.addEventListener('click', () => {
-      this.gameState.params.battery.guidance = GUIDANCE.PREDICTIVE;
+    btnAPN.addEventListener('click', () => {
+      this.gameState.params.battery.guidance = GUIDANCE.APN;
       update();
     });
     btnPN.addEventListener('click', () => {
@@ -176,16 +178,16 @@ export class ParameterPanel {
       update();
     });
 
-    group.appendChild(btnPred);
+    group.appendChild(btnAPN);
     group.appendChild(btnPN);
     row.appendChild(lbl);
     row.appendChild(group);
     this.container.appendChild(row);
 
     // Store refs for reset
-    this._guidanceBtnPred = btnPred;
-    this._guidanceBtnPN   = btnPN;
-    this._guidanceUpdate  = update;
+    this._guidanceBtnAPN = btnAPN;
+    this._guidanceBtnPN  = btnPN;
+    this._guidanceUpdate = update;
     update();
   }
 

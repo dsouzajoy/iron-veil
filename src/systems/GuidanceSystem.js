@@ -3,20 +3,21 @@
  *
  * Implements the two guidance algorithms for interceptor missiles:
  *
- *   1. Predictive Pursuit (default)
- *      Projects the hostile's future position and steers toward it.
- *      Simple and effective for constant-velocity targets.
+ *   1. Augmented Proportional Navigation (APN) — default
+ *      Extends PN by observing the target's lateral acceleration each frame
+ *      and adding a corrective term:
+ *        lateralAccelCommand = N × Vc × λ̇  +  (N/2) × gain × aT_perp
+ *      Dramatically improves performance against maneuvering targets.
  *
- *   2. Proportional Navigation (PN)
- *      Measures the rate of change of the line-of-sight angle and applies
- *      lateral acceleration proportional to that rate × navigation constant N.
- *      More accurate against maneuvering targets.
+ *   2. Proportional Navigation (PN) — fallback
+ *      Lateral acceleration = N × closing velocity × LOS rate.
+ *      Effective against constant-velocity targets.
  *
  * Both algorithms output an updated `angle` on the interceptor.
  * GuidanceSystem does NOT move missiles — call interceptor.move(dt) after.
  */
 
-import { GUIDANCE, PN_CONSTANT } from '@/constants.js';
+import { GUIDANCE } from '@/constants.js';
 
 export class GuidanceSystem {
   /**
@@ -30,54 +31,84 @@ export class GuidanceSystem {
     if (!interceptor.active || !target.active) return;
 
     switch (interceptor.guidance) {
-      case GUIDANCE.PREDICTIVE:
-        this._predictivePursuit(interceptor, target, dt);
-        break;
-
       case GUIDANCE.PROPORTIONAL:
         this._proportionalNav(interceptor, target, dt);
         break;
 
+      case GUIDANCE.APN:
       default:
-        this._predictivePursuit(interceptor, target, dt);
+        this._augmentedPN(interceptor, target, dt);
+        break;
     }
   }
 
-  // ── Predictive Pursuit ────────────────────────────────────────────────────────
+  // ── Augmented Proportional Navigation ────────────────────────────────────────
 
   /**
-   * Estimate where the hostile will be when the interceptor arrives and steer
-   * toward that predicted intercept point.
+   * APN extends PN with a feed-forward correction for the target's lateral
+   * acceleration, derived from the change in the target's velocity since the
+   * previous frame.
    *
    * Algorithm:
-   *   1. Compute distance from interceptor to hostile's current position.
-   *   2. Estimate time-to-intercept = dist / interceptorSpeed.
-   *   3. Project hostile's future position using its current velocity.
-   *   4. Compute desired heading to future position.
-   *   5. Rotate actual heading toward desired, capped by turnRate.
+   *   1. Compute LOS angle, LOS rate, and closing speed (same as PN).
+   *   2. Estimate target lateral acceleration from velocity delta.
+   *   3. Total command = N × Vc × λ̇  +  (N/2) × gain × aT_perp
+   *   4. Convert to angular velocity and cap by turnRate.
    *
    * @param {import('@/entities/Interceptor.js').Interceptor} interceptor
    * @param {import('@/entities/HostileMissile.js').HostileMissile} target
    * @param {number} dt
    */
-  _predictivePursuit(interceptor, target, dt) {
+  _augmentedPN(interceptor, target, dt) {
     const dx = target.x - interceptor.x;
     const dy = target.y - interceptor.y;
     const dist = Math.hypot(dx, dy);
 
-    if (dist < 0.1) return; // Already at target
+    if (dist < 0.1) return;
 
-    // Time estimate — one iteration is sufficient for smooth curves
-    const tEstimate = dist / interceptor.speed;
+    const losAngle = Math.atan2(dy, dx);
 
-    // Predicted hostile position
-    const futureX = target.x + target.vx * tEstimate;
-    const futureY = target.y + target.vy * tEstimate;
+    // First frame — initialise LOS state and steer directly toward target
+    if (interceptor.prevLosAngle === null) {
+      interceptor.prevLosAngle = losAngle;
+      this._rotateToward(interceptor, losAngle, dt);
+      return;
+    }
 
-    // Desired heading angle toward predicted intercept point
-    const desiredAngle = Math.atan2(futureY - interceptor.y, futureX - interceptor.x);
+    // LOS rate (rad/s)
+    const losRate = _angleDiff(losAngle, interceptor.prevLosAngle) / dt;
+    interceptor.prevLosAngle = losAngle;
 
-    this._rotateToward(interceptor, desiredAngle, dt);
+    // LOS unit vector
+    const ux = dx / dist;
+    const uy = dy / dist;
+
+    // Closing speed (magnitude of relative velocity along LOS)
+    const closingSpeed = Math.abs(
+      (target.vx - interceptor.vx) * ux +
+      (target.vy - interceptor.vy) * uy,
+    );
+
+    const N = interceptor.navigationConstant;
+
+    // ── PN base term ────────────────────────────────────────────────────────
+    let lateralAccel = N * closingSpeed * losRate;
+
+    // ── APN correction: target lateral acceleration ─────────────────────────
+    // Perpendicular to LOS (90° CCW): (-uy, ux)
+    // Target acceleration estimated from velocity delta this frame
+    if (dt > 0) {
+      const targetAx = (target.vx - target.prevVx) / dt;
+      const targetAy = (target.vy - target.prevVy) / dt;
+      const targetLateralAccel = targetAx * (-uy) + targetAy * ux;
+      lateralAccel += (N / 2) * interceptor.apnCorrectionGain * targetLateralAccel;
+    }
+
+    // Convert accel to angular velocity: a = v × dθ/dt  →  dθ/dt = a / v
+    const angularVel    = lateralAccel / (interceptor.speed || 1);
+    const maxAngularVel = interceptor.turnRate;
+    const clampedDelta  = Math.max(-maxAngularVel, Math.min(maxAngularVel, angularVel)) * dt;
+    interceptor.angle  += clampedDelta;
   }
 
   // ── Proportional Navigation ───────────────────────────────────────────────────
@@ -123,8 +154,10 @@ export class GuidanceSystem {
       (target.vy - interceptor.vy) * uy,
     );
 
+    const N = interceptor.navigationConstant;
+
     // Required lateral acceleration → heading change
-    const lateralAccel   = PN_CONSTANT * closingSpeed * losRate;
+    const lateralAccel   = N * closingSpeed * losRate;
     // Convert accel to angular velocity: a = v * dθ/dt → dθ/dt = a / v
     const angularVel     = lateralAccel / (interceptor.speed || 1);
     const maxAngularVel  = interceptor.turnRate;

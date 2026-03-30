@@ -129,13 +129,15 @@ export class TargetAssignment {
     const gs = this.gameState;
 
     const interceptor = new Interceptor({
-      x:            battery.x,
-      y:            battery.y,
-      targetId:     target.id,
-      speed:        battery.interceptorSpeed,
-      turnRate:     battery.turnRate,
-      killRadius:   battery.killRadius,
-      guidance:     battery.guidance,
+      x:                   battery.x,
+      y:                   battery.y,
+      targetId:            target.id,
+      speed:               battery.interceptorSpeed,
+      turnRate:            battery.turnRate,
+      killRadius:          battery.killRadius,
+      guidance:            battery.guidance,
+      navigationConstant:  battery.navigationConstant,
+      apnCorrectionGain:   battery.apnCorrectionGain,
       batteryIndex,
     });
 

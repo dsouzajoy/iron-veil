@@ -19,19 +19,23 @@ export class Interceptor {
    * @param {number} opts.speed         px/s (from Battery)
    * @param {number} opts.turnRate      rad/s (from Battery)
    * @param {number} opts.killRadius    px (from Battery)
-   * @param {string} opts.guidance      'predictive' | 'proportional'
-   * @param {number} opts.batteryIndex  Which battery fired this (for dedup)
+   * @param {string} opts.guidance            'apn' | 'proportional'
+   * @param {number} opts.navigationConstant  N for PN/APN (1–6)
+   * @param {number} opts.apnCorrectionGain   APN bias term gain (0.0–2.0)
+   * @param {number} opts.batteryIndex        Which battery fired this (for dedup)
    */
-  constructor({ x, y, targetId, speed, turnRate, killRadius, guidance, batteryIndex }) {
-    this.id           = _nextId++;
-    this.x            = x;
-    this.y            = y;
-    this.targetId     = targetId;
-    this.speed        = speed;
-    this.turnRate     = turnRate;
-    this.killRadius   = killRadius;
-    this.guidance     = guidance;
-    this.batteryIndex = batteryIndex;
+  constructor({ x, y, targetId, speed, turnRate, killRadius, guidance, navigationConstant, apnCorrectionGain, batteryIndex }) {
+    this.id                 = _nextId++;
+    this.x                  = x;
+    this.y                  = y;
+    this.targetId           = targetId;
+    this.speed              = speed;
+    this.turnRate           = turnRate;
+    this.killRadius         = killRadius;
+    this.guidance           = guidance;
+    this.navigationConstant = navigationConstant;
+    this.apnCorrectionGain  = apnCorrectionGain;
+    this.batteryIndex       = batteryIndex;
 
     // Current heading angle (radians). Points upward initially (toward launch zone).
     this.angle = -Math.PI / 2;

@@ -22,10 +22,12 @@ export class Battery {
     this.ammo             = params.ammo;
     this.fireRate         = params.fireRate;
     this.range            = params.range;
-    this.interceptorSpeed = params.interceptorSpeed;
-    this.turnRate         = params.turnRate;
-    this.killRadius       = params.killRadius;
-    this.guidance         = params.guidance;
+    this.interceptorSpeed    = params.interceptorSpeed;
+    this.turnRate            = params.turnRate;
+    this.killRadius          = params.killRadius;
+    this.guidance            = params.guidance;
+    this.navigationConstant  = params.navigationConstant;
+    this.apnCorrectionGain   = params.apnCorrectionGain;
 
     // Fire-control state
     /** Seconds since the last shot was fired (compared against 1/fireRate). */
