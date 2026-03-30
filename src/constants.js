@@ -109,7 +109,7 @@ export const DEFAULTS = {
     batteryBudget:         3,    // batteries the player may place
     tierIIIPercent:        20,   // % of buildings that are Tier III (rest split I/II)
     frontlineRoughness:    0.5,  // 0.0 = nearly flat, 1.0 = highly irregular
-    frontlineMeanAltitude: 0.40, // fraction from top (0.30–0.60)
+    frontlineMeanAltitude: 0.30, // fraction from top (0.10–0.60)
   },
 };
 
@@ -138,7 +138,7 @@ export const PARAM_RANGES = {
   'simulation.batteryBudget':         { min: 1,    max: 8,    step: 1,    unit: '' },
   'simulation.tierIIIPercent':        { min: 0,    max: 60,   step: 5,    unit: '%' },
   'simulation.frontlineRoughness':    { min: 0.0,  max: 1.0,  step: 0.05, unit: '' },
-  'simulation.frontlineMeanAltitude': { min: 0.30, max: 0.60, step: 0.01, unit: '' },
+  'simulation.frontlineMeanAltitude': { min: 0.10, max: 0.60, step: 0.01, unit: '' },
 };
 
 // ── Game phase identifiers ────────────────────────────────────────────────────

@@ -175,6 +175,7 @@ export class BackgroundRenderer {
 
     ctx.save();
 
+    // ── Frontline curve ───────────────────────────────────────────────────────
     ctx.strokeStyle = COLORS.FRONTLINE_LINE;
     ctx.lineWidth   = 1.5;
     ctx.shadowColor = 'rgba(255, 176, 0, 0.30)';
@@ -186,6 +187,29 @@ export class BackgroundRenderer {
       ctx.lineTo(x, frontline[x]);
     }
     ctx.stroke();
+    ctx.shadowBlur = 0;
+
+    // ── Territory labels (vertical, rotated -90°) ─────────────────────────────
+    // Sample the average frontline y to find the center of each zone.
+    let sumY = 0;
+    const step = Math.max(1, Math.floor(frontline.length / 40));
+    let   n    = 0;
+    for (let x = 0; x < frontline.length; x += step) { sumY += frontline[x]; n++; }
+    const avgY = sumY / n;
+
+    const enemyCenterY   = avgY / 2;
+    const friendlyCenterY = avgY + (h - avgY) / 2;
+
+    ctx.font      = 'bold 13px "Share Tech Mono", monospace';
+    ctx.textAlign = 'center';
+    const pad   = 6;
+    const labelX = 18;  // distance from left edge
+
+    _drawVerticalLabel(ctx, 'HOSTILE LAUNCH ZONE', labelX, enemyCenterY,
+      'rgba(255, 100, 100, 1.0)', 'rgba(255, 32, 32, 1.0)', pad);
+
+    _drawVerticalLabel(ctx, 'DEFENDED TERRITORY', labelX, friendlyCenterY,
+      'rgba(0, 255, 100, 1.0)', 'rgba(0, 255, 65, 1.0)', pad);
 
     ctx.shadowBlur = 0;
     ctx.restore();
@@ -250,6 +274,44 @@ export class BackgroundRenderer {
       ctx.stroke();
     }
   }
+}
+
+// ── Vertical label helper ─────────────────────────────────────────────────────
+
+/**
+ * Draw a label rotated -90° (reads bottom-to-top) centered at (cx, cy).
+ *
+ * @param {CanvasRenderingContext2D} ctx
+ * @param {string} text
+ * @param {number} cx        Horizontal center of the label
+ * @param {number} cy        Vertical center of the label
+ * @param {string} color     Text fill color
+ * @param {string} glow      Shadow/glow color
+ * @param {number} pad       Padding inside the backing rect
+ */
+function _drawVerticalLabel(ctx, text, cx, cy, color, glow, pad) {
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.rotate(-Math.PI / 2);
+
+  const tw = ctx.measureText(text).width;
+  const th = 12; // approximate cap height for 11px font
+
+  // Dark backing rect
+  ctx.fillStyle = 'rgba(2, 10, 6, 0.90)';
+  ctx.shadowBlur = 0;
+  ctx.fillRect(-tw / 2 - pad, -th - pad, tw + pad * 2, th + pad * 2);
+
+  // Text
+  ctx.fillStyle   = color;
+  ctx.shadowColor = glow;
+  ctx.shadowBlur  = 10;
+  ctx.fillText(text, 0, 0);
+  // Second pass for extra crispness
+  ctx.shadowBlur  = 0;
+  ctx.fillText(text, 0, 0);
+
+  ctx.restore();
 }
 
 // ── Procedural topographic contours ──────────────────────────────────────────
