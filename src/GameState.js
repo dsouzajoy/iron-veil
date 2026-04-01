@@ -68,6 +68,13 @@ export class GameState {
     // ── Engagement timer (seconds elapsed since ENGAGE) ───────────────────────
     this.engagementTime = 0;
 
+    // ── Advanced mode flag ────────────────────────────────────────────────────
+    // When false the simulation behaves like pre-radar-feature: all hostiles are
+    // immediately visible and batteries fire without any track-quality gate.
+    // Toggled by the [ADVANCED MODE] button in the parameter panel — intentionally
+    // NOT part of params so that [RESET PARAMETERS] does not clear it.
+    this.advancedMode = false;
+
     // ── Internal event-bus ────────────────────────────────────────────────────
     /** @type {Map<string, Set<Function>>} */
     this._listeners = new Map();

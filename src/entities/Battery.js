@@ -33,6 +33,13 @@ export class Battery {
     /** Seconds since the last shot was fired (compared against 1/fireRate). */
     this.timeSinceLastShot = 0;
 
+    // Radar sweep visual state (§7.5 — Per-Battery Radar Sweep)
+    // Angle is advanced each frame by RadarSystem; random start so batteries
+    // don't all sweep in lockstep.
+    this.radarSweepAngle   = Math.random() * Math.PI * 2;
+    /** Seconds remaining on the new-contact acquisition flash. */
+    this.radarContactFlash = 0;
+
     /**
      * ID of the hostile this battery is currently tracking.
      * null means the battery is searching for a target.

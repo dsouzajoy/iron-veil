@@ -6,7 +6,8 @@
  * Each frame (during ENGAGEMENT) this system:
  *   1. Cleans up stale target assignments (intercepted / impacted hostiles).
  *   2. For each battery that has no assigned target, finds the nearest
- *      active hostile within the engagement envelope.
+ *      active hostile within the engagement envelope that has a fireable
+ *      radar track (quality ≥ minTrackQuality — §4.2).
  *   3. When a battery is ready to fire (cooldown expired, ammo remaining),
  *      launches a new Interceptor toward the assigned hostile.
  *
@@ -21,10 +22,12 @@ export class TargetAssignment {
   /**
    * @param {import('@/GameState.js').GameState} gameState
    * @param {import('./GuidanceSystem.js').GuidanceSystem} guidanceSystem
+   * @param {import('./RadarSystem.js').RadarSystem} radarSystem
    */
-  constructor(gameState, guidanceSystem) {
+  constructor(gameState, guidanceSystem, radarSystem) {
     this.gameState      = gameState;
     this.guidanceSystem = guidanceSystem;
+    this.radarSystem    = radarSystem;
   }
 
   /**
@@ -106,6 +109,9 @@ export class TargetAssignment {
 
     for (const hostile of this.gameState.hostiles) {
       if (!hostile.active) continue;
+
+      // §4.2 — only engage contacts with sufficient track quality
+      if (!this.radarSystem.isFireable(hostile.id)) continue;
 
       const dist = Math.hypot(hostile.x - battery.x, hostile.y - battery.y);
       if (dist > battery.range)  continue;

@@ -105,6 +105,25 @@ export class ParameterPanel {
     this._addSlider('simulation.frontlineRoughness',    'FRONT ROUGHNESS', 'simulation', 'frontlineRoughness');
     this._addSlider('simulation.frontlineMeanAltitude', 'FRONT ALTITUDE',  'simulation', 'frontlineMeanAltitude');
 
+    // ── Advanced Mode toggle ──────────────────────────────────────────────────
+    this._buildAdvancedModeToggle();
+
+    // ── Sensor & C2 (§4.1 / §4.2) — only visible in advanced mode ────────────
+    this._sensorSection = document.createElement('div');
+    this._sensorSection.style.display = 'none';
+
+    const sensorHeader = _sectionHeader('[SENSOR & C2]');
+    this._sensorSection.appendChild(sensorHeader);
+
+    // Temporarily swap container so _addSlider writes into the sensor section
+    const realContainer = this.container;
+    this.container = this._sensorSection;
+    this._addSlider('sensor.detectionRange',  'DETECTION RANGE', 'sensor', 'detectionRange');
+    this._addSlider('sensor.minTrackQuality', 'MIN TRACK QUAL',  'sensor', 'minTrackQuality');
+    this.container = realContainer;
+
+    this.container.appendChild(this._sensorSection);
+
     // ── Actions ───────────────────────────────────────────────────────────────
     this.container.appendChild(_sectionHeader('[ACTIONS]'));
     this._buildActionButtons();
@@ -251,6 +270,33 @@ export class ParameterPanel {
     this._flightBtnStr = btnStr;
     this._flightUpdate = update;
     update();
+  }
+
+  // ── Advanced mode toggle ──────────────────────────────────────────────────
+
+  _buildAdvancedModeToggle() {
+    const btn = _el('button', 'action-btn advanced-mode-btn', '');
+    this._advancedModeBtn = btn;
+    this._syncAdvancedModeBtn();
+
+    btn.addEventListener('click', () => {
+      this.gameState.advancedMode = !this.gameState.advancedMode;
+      this._syncAdvancedModeBtn();
+    });
+
+    this.container.appendChild(btn);
+  }
+
+  _syncAdvancedModeBtn() {
+    const on  = this.gameState.advancedMode;
+    this._advancedModeBtn.textContent = on
+      ? '[ADVANCED MODE: ON  ]'
+      : '[ADVANCED MODE: OFF ]';
+    this._advancedModeBtn.classList.toggle('active', on);
+
+    if (this._sensorSection) {
+      this._sensorSection.style.display = on ? 'block' : 'none';
+    }
   }
 
   // ── Action buttons ────────────────────────────────────────────────────────────

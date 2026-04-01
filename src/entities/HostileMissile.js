@@ -66,6 +66,12 @@ export class HostileMissile {
     this.active    = true;   // false when intercepted or impacted
     this.elapsed   = 0;      // seconds since launch
 
+    // Radar cross-section (§1.6 / §4.1 — Stealth & Detection Range)
+    // 0.0 = fully visible; 1.0 = fully stealthy. Reduces effective detection
+    // range: effectiveRange = battery.detectionRange × (1 - stealthLevel).
+    // Default is 0 (no stealth); per-wave overrides will set this in Phase 2.
+    this.stealthLevel = 0;
+
     // ── Trail (last N positions for rendering) ───────────────────────────────
     /** @type {Array<{x:number, y:number}>} */
     this.trail = [];

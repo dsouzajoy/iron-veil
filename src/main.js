@@ -28,6 +28,7 @@ import { GuidanceSystem }   from './systems/GuidanceSystem.js';
 import { TargetAssignment } from './systems/TargetAssignment.js';
 import { CollisionSystem }  from './systems/CollisionSystem.js';
 import { ScoringSystem }    from './systems/ScoringSystem.js';
+import { RadarSystem }      from './systems/RadarSystem.js';
 import { AudioSystem }      from './audio/AudioSystem.js';
 import { UIController }     from './ui/UIController.js';
 import { HostileMissile }   from './entities/HostileMissile.js';
@@ -41,9 +42,14 @@ const renderer    = new Renderer(gameState);
 const audioSystem = new AudioSystem();
 
 const guidanceSystem   = new GuidanceSystem();
+const radarSystem      = new RadarSystem(gameState);
 const scoringSystem    = new ScoringSystem(gameState);
-const targetAssignment = new TargetAssignment(gameState, guidanceSystem);
+const targetAssignment = new TargetAssignment(gameState, guidanceSystem, radarSystem);
 const collisionSystem  = new CollisionSystem(gameState, scoringSystem);
+
+// Inject RadarSystem into DynamicRenderer so it can gate hostile visibility
+// and draw uncertainty overlays (§4.1 / §7.6). Done after renderer construction.
+renderer.dynamic.radarSystem = radarSystem;
 
 // ── 2. Wire AudioSystem to GameState events ───────────────────────────────────
 
@@ -181,6 +187,7 @@ function beginEngagement() {
   gs.hostiles      = [];
   gs.interceptors  = [];
   gs.explosions    = [];
+  radarSystem.reset();   // clear all tracks from any previous engagement (§4.1)
   gs.startEngagement();
   renderer.markEntitiesDirty();
 }
@@ -263,6 +270,10 @@ function _updateEngagement(dt) {
 
   // ── Collision detection ────────────────────────────────────────────────────
   collisionSystem.update();
+
+  // ── Radar detection + track quality (§4.1 / §4.2) ─────────────────────────
+  // Run before fire-control so TargetAssignment sees up-to-date track quality.
+  radarSystem.update(dt);
 
   // ── Battery fire-control ───────────────────────────────────────────────────
   targetAssignment.update(dt);

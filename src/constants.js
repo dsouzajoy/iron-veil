@@ -113,6 +113,12 @@ export const DEFAULTS = {
     frontlineRoughness:    0.5,  // 0.0 = nearly flat, 1.0 = highly irregular
     frontlineMeanAltitude: 0.30, // fraction from top (0.10–0.60)
   },
+
+  // Sensor & C2 settings (§4.1 / §4.2 — Radar Detection Model + Track Quality)
+  sensor: {
+    detectionRange:  280,  // px — radar coverage radius per battery
+    minTrackQuality: 0.4,  // 0.0–1.0 — minimum track quality before a battery may fire
+  },
 };
 
 // ── Slider range definitions (used by ParameterPanel) ────────────────────────
@@ -143,6 +149,10 @@ export const PARAM_RANGES = {
   'simulation.tierIIIPercent':        { min: 0,    max: 60,   step: 5,    unit: '%' },
   'simulation.frontlineRoughness':    { min: 0.0,  max: 1.0,  step: 0.05, unit: '' },
   'simulation.frontlineMeanAltitude': { min: 0.10, max: 0.60, step: 0.01, unit: '' },
+
+  // Sensor & C2 (§4.1 / §4.2)
+  'sensor.detectionRange':  { min: 100, max: 500, step: 10,   unit: 'px' },
+  'sensor.minTrackQuality': { min: 0.0, max: 1.0, step: 0.05, unit: '' },
 };
 
 // ── Game phase identifiers ────────────────────────────────────────────────────

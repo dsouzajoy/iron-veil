@@ -300,6 +300,24 @@ select:focus {
   color: var(--color-bg);
 }
 
+/* Advanced mode toggle — amber outline when OFF, amber fill when ON */
+.action-btn.advanced-mode-btn {
+  border-color: var(--color-amber);
+  color: var(--color-amber);
+  letter-spacing: 0.12em;
+}
+
+.action-btn.advanced-mode-btn:hover {
+  background: rgba(255, 176, 0, 0.12);
+  color: var(--color-amber);
+  box-shadow: 0 0 10px rgba(255, 176, 0, 0.3);
+}
+
+.action-btn.advanced-mode-btn.active {
+  background: rgba(255, 176, 0, 0.18);
+  box-shadow: 0 0 12px rgba(255, 176, 0, 0.45);
+}
+
 /* ── Status readout panel (inside param panel, live during engagement) ─── */
 #status-panel {
   border: 1px solid var(--color-border);

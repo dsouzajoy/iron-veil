@@ -4,8 +4,11 @@
  * Cleared and redrawn every frame during ENGAGEMENT.
  * Renders all moving / transient elements:
  *   - Hostile missiles (red V-chevron + exhaust trail)
+ *       Only drawn when detected by radar (§4.1). Newly detected contacts
+ *       display a shrinking uncertainty circle (§7.6).
  *   - Interceptor missiles (green diamond + lead glow + trail)
  *   - Explosions (expanding ring, color-coded by type)
+ *   - Battery radar sweep arcs (rotating green fan, §7.5)
  *   - Engagement-envelope preview ghost while player is placing a battery
  *   - Battery hover highlight (amber ring when pointer is over a placed battery)
  *   - Placement status bar (DEPLOYMENT phase HUD at bottom of canvas)
@@ -34,6 +37,14 @@ export class DynamicRenderer {
      * @type {number}
      */
     this.hoveredBatteryIndex = -1;
+
+    /**
+     * Reference to the RadarSystem, injected from main.js after construction.
+     * When set, hostile missiles are only rendered if detected, and uncertainty
+     * circles are drawn on maturing tracks (§4.1 / §7.6).
+     * @type {import('@/systems/RadarSystem.js').RadarSystem | null}
+     */
+    this.radarSystem = null;
   }
 
   // ── Public API ────────────────────────────────────────────────────────────────
@@ -73,14 +84,28 @@ export class DynamicRenderer {
       }
     }
 
+    // Radar sweep arcs — only in advanced mode during ENGAGEMENT (§7.5)
+    // In simple mode there is no radar sensor layer, so no sweeps are shown.
+    if (gameState.phase === PHASE.ENGAGEMENT && gameState.advancedMode) {
+      const detectionRange = gameState.params.sensor?.detectionRange ?? 280;
+      for (const battery of gameState.batteries) {
+        if (!battery.destroyed) this._drawRadarSweep(ctx, battery, detectionRange);
+      }
+    }
+
     // Explosions (draw before missiles so they appear under live objects)
     for (const exp of gameState.explosions) {
       if (exp.active) this._drawExplosion(ctx, exp);
     }
 
-    // Hostile missiles
+    // Hostile missiles — only rendered once detected by radar (§4.1)
     for (const hostile of gameState.hostiles) {
-      if (hostile.active) this._drawHostile(ctx, hostile);
+      if (!hostile.active) continue;
+      // Gate visibility on radar detection; if no RadarSystem is wired (e.g.
+      // during unit tests), fall back to always-visible behaviour.
+      if (this.radarSystem && !this.radarSystem.isDetected(hostile.id)) continue;
+      const track = this.radarSystem?.getTrack(hostile.id) ?? null;
+      this._drawHostile(ctx, hostile, track);
     }
 
     // Interceptors
@@ -144,7 +169,15 @@ export class DynamicRenderer {
 
   // ── Hostile missile ───────────────────────────────────────────────────────────
 
-  _drawHostile(ctx, hostile) {
+  /**
+   * Draw a hostile missile chevron and, when the track is maturing, an
+   * uncertainty circle overlay (§7.6).
+   *
+   * @param {CanvasRenderingContext2D} ctx
+   * @param {import('@/entities/HostileMissile.js').HostileMissile} hostile
+   * @param {{ quality: number, uncertaintyRadius: number } | null} track
+   */
+  _drawHostile(ctx, hostile, track = null) {
     // Amber during ballistic flight; red once terminal phase activates
     const missileColor = hostile.inTerminalPhase ? COLORS.RED : COLORS.AMBER;
     const fillColor    = hostile.inTerminalPhase
@@ -178,6 +211,45 @@ export class DynamicRenderer {
     ctx.stroke();
 
     ctx.restore();
+
+    // ── Track uncertainty overlay (§7.6) ─────────────────────────────────────
+    // Shown while the track is maturing (quality < 1). A dashed circle shrinks
+    // from 30px to 0, transitioning from amber (uncertain) to green (confirmed).
+    // A small arc fills clockwise as a quality progress indicator.
+    if (track && track.quality < 1) {
+      const q = track.quality;
+      const r = track.uncertaintyRadius;
+
+      // Color interpolates amber → green as quality rises
+      const strokeCol = q < 0.5
+        ? `rgba(255,176,0,${0.7 - q * 0.4})`
+        : `rgba(0,255,65,${0.3 + q * 0.5})`;
+
+      ctx.save();
+
+      // Dashed uncertainty circle
+      ctx.strokeStyle = strokeCol;
+      ctx.lineWidth   = 1.5;
+      ctx.setLineDash([3, 4]);
+      ctx.shadowColor = strokeCol;
+      ctx.shadowBlur  = 6;
+      ctx.beginPath();
+      ctx.arc(hostile.x, hostile.y, r, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // Quality progress arc — small ring around the icon filling clockwise
+      ctx.strokeStyle = 'rgba(0,255,65,0.85)';
+      ctx.lineWidth   = 2;
+      ctx.shadowBlur  = 8;
+      ctx.beginPath();
+      ctx.arc(hostile.x, hostile.y, 10,
+        -Math.PI / 2,
+        -Math.PI / 2 + q * Math.PI * 2);
+      ctx.stroke();
+
+      ctx.restore();
+    }
   }
 
   // ── Interceptor missile ───────────────────────────────────────────────────────
@@ -357,6 +429,53 @@ export class DynamicRenderer {
     ctx.moveTo(ghost.x - s, ghost.y); ctx.lineTo(ghost.x + s, ghost.y);
     ctx.moveTo(ghost.x, ghost.y - s); ctx.lineTo(ghost.x, ghost.y + s);
     ctx.stroke();
+    ctx.restore();
+  }
+
+  // ── Radar sweep arc (§7.5) ───────────────────────────────────────────────────
+
+  /**
+   * Draw the rotating radar sweep arc for a placed battery.
+   *
+   * The arc is a faint green wedge that rotates at one revolution per three
+   * seconds. When a new contact is acquired, `battery.radarContactFlash > 0`
+   * causes a brief brightness spike on the leading edge.
+   *
+   * @param {CanvasRenderingContext2D} ctx
+   * @param {import('@/entities/Battery.js').Battery} battery
+   * @param {number} detectionRange  Effective radar range (px)
+   */
+  _drawRadarSweep(ctx, battery, detectionRange) {
+    const angle      = battery.radarSweepAngle;
+    const flash      = battery.radarContactFlash;   // 0 (none) → 0.35 (peak)
+    const flashT     = Math.min(1, flash / 0.35);   // normalise to 0–1
+    const sweepWidth = Math.PI / 8;                  // 22.5° arc width
+
+    ctx.save();
+    ctx.translate(battery.x, battery.y);
+
+    // Sweep wedge fill — faint green fan
+    const fillAlpha  = 0.05 + flashT * 0.15;
+    const edgeAlpha  = 0.4  + flashT * 0.6;
+
+    ctx.fillStyle   = `rgba(0,255,65,${fillAlpha})`;
+    ctx.strokeStyle = `rgba(0,255,65,${edgeAlpha})`;
+    ctx.lineWidth   = 1;
+    ctx.shadowColor = `rgba(0,255,65,${edgeAlpha})`;
+    ctx.shadowBlur  = flashT > 0 ? 12 : 3;
+
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.arc(0, 0, detectionRange, angle - sweepWidth, angle);
+    ctx.closePath();
+    ctx.fill();
+
+    // Leading-edge bright line
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(Math.cos(angle) * detectionRange, Math.sin(angle) * detectionRange);
+    ctx.stroke();
+
     ctx.restore();
   }
 
