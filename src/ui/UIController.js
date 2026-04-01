@@ -16,7 +16,8 @@
 import { ParameterPanel }    from './ParameterPanel.js';
 import { StatusPanel }       from './StatusPanel.js';
 import { AfterActionReport } from './AfterActionReport.js';
-import { Tutorial }          from './Tutorial.js';
+import { Tutorial }              from './Tutorial.js';
+import { AdvancedModeTutorial }  from './AdvancedModeTutorial.js';
 import { Battery }           from '@/entities/Battery.js';
 import { PHASE } from '@/constants.js';
 import { generateFrontline } from '@/systems/FrontlineGenerator.js';
@@ -48,11 +49,12 @@ export class UIController {
     const panelEl = document.getElementById('param-panel');
 
     this.paramPanel = new ParameterPanel(panelEl, gameState, {
-      onGenerateMap: () => this._handleGenerateMap(),
-      onEngage:      () => this._handleEngage(),
-      onAbort:       () => this._handleAbort(),
-      onReset:       () => {},
-      onHelp:        () => this.tutorial.show(),
+      onGenerateMap:         () => this._handleGenerateMap(),
+      onEngage:              () => this._handleEngage(),
+      onAbort:               () => this._handleAbort(),
+      onReset:               () => {},
+      onHelp:                () => this.tutorial.show(),
+      onAdvancedModeEnabled: () => this.advancedTutorial.showIfNeeded(),
     });
 
     this.statusPanel = new StatusPanel(gameState);
@@ -62,7 +64,8 @@ export class UIController {
       onNewEngagement: () => this._handleNewEngagement(),
     });
 
-    this.tutorial = new Tutorial();
+    this.tutorial         = new Tutorial();
+    this.advancedTutorial = new AdvancedModeTutorial();
 
     // ── Mouse event wiring ────────────────────────────────────────────────────
     this._hoveredBatteryIndex = -1;

@@ -282,6 +282,9 @@ export class ParameterPanel {
     btn.addEventListener('click', () => {
       this.gameState.advancedMode = !this.gameState.advancedMode;
       this._syncAdvancedModeBtn();
+      if (this.gameState.advancedMode) {
+        this.callbacks.onAdvancedModeEnabled?.();
+      }
     });
 
     this.container.appendChild(btn);

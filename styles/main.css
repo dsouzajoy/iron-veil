@@ -496,10 +496,10 @@ select:focus {
 }
 
 /* ── Tutorial overlay ────────────────────────────────────────────────────── */
-#tutorial-overlay {
+#tutorial-overlay,
+#advanced-tutorial-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(5, 15, 10, 0.88);
   z-index: 200;
   display: flex;
   align-items: center;
@@ -507,8 +507,88 @@ select:focus {
   font-family: var(--font-mono);
 }
 
-#tutorial-overlay.hidden {
+#tutorial-overlay {
+  background: rgba(5, 15, 10, 0.88);
+}
+
+#advanced-tutorial-overlay {
+  background: rgba(15, 10, 0, 0.88);
+}
+
+#tutorial-overlay.hidden,
+#advanced-tutorial-overlay.hidden {
   display: none;
+}
+
+/* ── Advanced tutorial — amber colour overrides ───────────────────────────── */
+#advanced-tutorial-overlay .tut-box {
+  border-color: #8a6200;
+  outline-color: #3a2a00;
+  box-shadow: 0 0 50px rgba(255, 176, 0, 0.10), inset 0 0 30px rgba(0,0,0,0.5);
+}
+#advanced-tutorial-overlay .tut-box::-webkit-scrollbar-thumb {
+  background: #8a6200;
+}
+#advanced-tutorial-overlay .tut-classification {
+  color: #8a6200;
+  border-bottom-color: #3a2a00;
+}
+#advanced-tutorial-overlay .tut-step-label {
+  color: #8a6200;
+}
+#advanced-tutorial-overlay .tut-title {
+  color: var(--color-amber);
+  text-shadow: 0 0 10px #8a6200;
+}
+#advanced-tutorial-overlay .tut-body {
+  color: var(--color-amber);
+}
+#advanced-tutorial-overlay .tut-body b {
+  color: var(--color-amber);
+  text-shadow: 0 0 6px #8a6200;
+}
+#advanced-tutorial-overlay .tut-table td {
+  color: var(--color-amber);
+}
+#advanced-tutorial-overlay .tut-table td:first-child {
+  color: #8a6200;
+}
+#advanced-tutorial-overlay .tut-unit {
+  color: #8a6200;
+}
+#advanced-tutorial-overlay .tut-hint {
+  color: #8a6200 !important;
+}
+#advanced-tutorial-overlay .tut-dot {
+  border-color: #8a6200;
+}
+#advanced-tutorial-overlay .tut-dot.active {
+  background: var(--color-amber);
+  border-color: var(--color-amber);
+  box-shadow: 0 0 6px #8a6200;
+}
+#advanced-tutorial-overlay .action-btn {
+  color: var(--color-amber);
+  border-color: #8a6200;
+}
+#advanced-tutorial-overlay .action-btn:hover {
+  background: #8a6200;
+  color: var(--color-bg);
+  box-shadow: 0 0 10px #8a6200;
+}
+#advanced-tutorial-overlay .action-btn:disabled {
+  color: #3a2a00;
+  border-color: #3a2a00;
+}
+#advanced-tutorial-overlay .action-btn.primary {
+  border-color: var(--color-amber);
+  color: var(--color-amber);
+  box-shadow: 0 0 6px rgba(255, 176, 0, 0.2);
+}
+#advanced-tutorial-overlay .action-btn.primary:hover {
+  background: var(--color-amber);
+  color: var(--color-bg);
+  box-shadow: 0 0 10px rgba(255, 176, 0, 0.5);
 }
 
 .tut-box {
